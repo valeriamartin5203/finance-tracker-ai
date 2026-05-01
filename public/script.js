@@ -609,6 +609,127 @@ function initializeApp() {
     }
 }
 
+// ============ FUNCIONES PARA PERFIL EN MONGODB ============
+
+async function loadProfileFromServer() {
+    try {
+        const response = await fetch('/api/profile');
+        const data = await response.json();
+        if (data.profile) {
+            userProfile = {
+                monthlyIncome: data.profile.monthlyIncome || 0,
+                incomeFrequency: data.profile.incomeFrequency || 'mensual',
+                rent: data.profile.rent || 0,
+                services: data.profile.services || 0,
+                groceries: data.profile.groceries || 0,
+                transport: data.profile.transport || 0,
+                hasDebt: data.profile.hasDebt || false,
+                debtAmount: data.profile.debtAmount || 0,
+                debtInterest: data.profile.debtInterest || 0,
+                savings: data.profile.savings || 0,
+                goal: data.profile.goal || 'ahorro',
+                projectionMonths: data.profile.projectionMonths || 12
+            };
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error loading profile from server:', error);
+        return false;
+    }
+}
+
+async function saveProfileToServer(profile) {
+    try {
+        const response = await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profile)
+        });
+        const data = await response.json();
+        return data.success;
+    } catch (error) {
+        console.error('Error saving profile to server:', error);
+        return false;
+    }
+}
+
+// Modificar initializeProfile para usar server
+async function initializeProfile() {
+    const modal = document.getElementById('profileModal');
+    const appContainer = document.getElementById('appContainer');
+    
+    // Escuchar cambios en deuda
+    const debtRadios = document.querySelectorAll('input[name="hasDebt"]');
+    debtRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            toggleDebtFields(e.target.value === 'si');
+        });
+    });
+    
+    // Manejar envío del formulario de perfil
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newProfile = {
+                monthlyIncome: parseFloat(document.getElementById('profileIncome').value) || 0,
+                incomeFrequency: document.querySelector('input[name="incomeFrequency"]:checked').value,
+                rent: parseFloat(document.getElementById('profileRent').value) || 0,
+                services: parseFloat(document.getElementById('profileServices').value) || 0,
+                groceries: parseFloat(document.getElementById('profileGroceries').value) || 0,
+                transport: parseFloat(document.getElementById('profileTransport').value) || 0,
+                hasDebt: document.querySelector('input[name="hasDebt"]:checked').value === 'si',
+                debtAmount: parseFloat(document.getElementById('profileDebtAmount').value) || 0,
+                debtInterest: parseFloat(document.getElementById('profileDebtInterest').value) || 0,
+                savings: parseFloat(document.getElementById('profileSavings').value) || 0,
+                goal: document.getElementById('profileGoal').value,
+                projectionMonths: parseInt(document.getElementById('profileProjection').value) || 12
+            };
+            
+            userProfile = newProfile;
+            await saveProfileToServer(userProfile);
+            updateProfileSummary();
+            
+            modal.style.display = 'none';
+            appContainer.style.display = 'block';
+            
+            loadData();
+        });
+    }
+    
+    // Botón para editar perfil
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+            showProfileModal();
+        });
+    }
+    
+    // Intentar cargar perfil del servidor primero
+    const hasProfile = await loadProfileFromServer();
+    
+    if (hasProfile && userProfile.monthlyIncome > 0) {
+        modal.style.display = 'none';
+        appContainer.style.display = 'block';
+        updateProfileSummary();
+        loadData();
+    } else {
+        // Si no hay perfil en servidor, intentar localStorage como respaldo
+        if (loadProfileFromLocalStorage() && userProfile.monthlyIncome > 0) {
+            await saveProfileToServer(userProfile);
+            modal.style.display = 'none';
+            appContainer.style.display = 'block';
+            updateProfileSummary();
+            loadData();
+        } else {
+            modal.style.display = 'flex';
+            appContainer.style.display = 'none';
+        }
+    }
+}
+
 // Configurar eventos después de que el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
