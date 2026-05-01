@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceTracker AI | Asesor Financiero Inteligente</title>
+    <title>FinanceTracker AI | Asesor Financiero</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- MODAL DE PERFIL FINANCIERO (aparece al inicio) -->
+    <!-- MODAL DE PERFIL -->
     <div id="profileModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -26,15 +26,9 @@
                     <div class="form-group">
                         <label>📅 Frecuencia del ingreso</label>
                         <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="incomeFrequency" value="semanal"> 📆 Semanal
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="incomeFrequency" value="quincenal"> 📅 Quincenal
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="incomeFrequency" value="mensual" checked> 📆 Mensual
-                            </label>
+                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="semanal"> 📆 Semanal</label>
+                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="quincenal"> 📅 Quincenal</label>
+                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="mensual" checked> 📆 Mensual</label>
                         </div>
                     </div>
                     
@@ -61,12 +55,8 @@
                     <div class="form-group">
                         <label>💳 ¿Tienes deudas?</label>
                         <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="hasDebt" value="no" checked> ✅ No
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="hasDebt" value="si"> ⚠️ Sí
-                            </label>
+                            <label class="radio-option"><input type="radio" name="hasDebt" value="no" checked> ✅ No</label>
+                            <label class="radio-option"><input type="radio" name="hasDebt" value="si"> ⚠️ Sí</label>
                         </div>
                     </div>
                     
@@ -93,7 +83,7 @@
                             <option value="casa">Comprar casa/departamento</option>
                             <option value="auto">Comprar auto</option>
                             <option value="viaje">Hacer un viaje</option>
-                            <option value="invertir">Invertir y hacer crecer mi dinero</option>
+                            <option value="invertir">Invertir</option>
                             <option value="libertad">Libertad financiera</option>
                             <option value="deudas">Pagar deudas</option>
                         </select>
@@ -109,19 +99,19 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn-primary">🎯 Comenzar mi diagnóstico financiero</button>
+                    <button type="submit" class="btn-primary">🎯 Comenzar diagnóstico</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- APP PRINCIPAL (se muestra después de llenar el perfil) -->
+    <!-- APP PRINCIPAL -->
     <div class="app-container" id="appContainer" style="display: none;">
         <header>
             <div class="logo">
                 <span class="logo-icon">💰</span>
                 <h1>FinanceTracker AI</h1>
-                <span class="badge-experto">Asesor Experto IA</span>
+                <span class="badge-experto">Asesor Experto</span>
             </div>
             <div class="controls">
                 <button id="editProfileBtn" class="btn-edit-profile">✏️ Editar Perfil</button>
@@ -137,7 +127,6 @@
         </header>
 
         <div class="dashboard">
-            <!-- Tarjeta de resumen del perfil -->
             <div class="profile-summary-card" id="profileSummary">
                 <div class="profile-summary-content">
                     <span class="profile-emoji">👤</span>
@@ -148,36 +137,28 @@
                 </div>
             </div>
 
-            <!-- Tarjetas de resumen de ingresos/gastos/balance -->
             <div class="summary-cards">
                 <div class="card income-card">
-                    <h3>💰 Ingresos Mensuales</h3>
+                    <h3>💰 Ingresos</h3>
                     <div class="amount" id="totalIncome">$0</div>
-                    <span class="trend">📈 Total</span>
                 </div>
                 <div class="card expense-card">
-                    <h3>💸 Gastos Mensuales</h3>
+                    <h3>💸 Gastos</h3>
                     <div class="amount" id="totalExpenses">$0</div>
-                    <span class="trend">📉 Total</span>
                 </div>
                 <div class="card balance-card">
-                    <h3>⚖️ Balance Mensual</h3>
+                    <h3>⚖️ Balance</h3>
                     <div class="amount" id="balance">$0</div>
-                    <span class="trend" id="balanceTrend">📊</span>
                 </div>
             </div>
 
-            <!-- Gráfica de distribución de gastos -->
             <div class="chart-section">
-                <div class="chart-header">
-                    <h2>📊 Distribución de Gastos por Categoría</h2>
-                </div>
+                <h2>📊 Distribución de Gastos</h2>
                 <div class="chart-container">
-                    <canvas id="expenseChart"></canvas>
+                    <canvas id="expenseChart" width="400" height="400"></canvas>
                 </div>
             </div>
 
-            <!-- Formulario para agregar transacciones -->
             <div class="transaction-form">
                 <h2>📝 Registrar Transacción</h2>
                 <form id="transactionForm">
@@ -191,7 +172,7 @@
                         </div>
                         <div class="form-group">
                             <label>Descripción</label>
-                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado, Salario, etc." required>
+                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado" required>
                         </div>
                         <div class="form-group">
                             <label>Monto</label>
@@ -214,32 +195,27 @@
                             <input type="date" id="dateInput" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary">➕ Agregar Transacción</button>
+                    <button type="submit" class="btn-primary">➕ Agregar</button>
                 </form>
             </div>
 
-            <!-- Sección de análisis con IA -->
             <div class="ai-section">
                 <div class="ai-header">
                     <div>
                         <h2>🤖 Asesor Financiero IA</h2>
-                        <p class="ai-subtitle">Experto con 10+ años de experiencia en banca privada</p>
+                        <p class="ai-subtitle">Experto con 10+ años de experiencia</p>
                     </div>
-                    <button id="analyzeBtn" class="btn-ai">✨ Analizar con IA Experta</button>
+                    <button id="analyzeBtn" class="btn-ai">✨ Analizar con IA</button>
                 </div>
                 <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">📊 Haz clic en "Analizar con IA Experta" para recibir un diagnóstico financiero profesional basado en tus datos reales</p>
+                    <p class="placeholder">📊 Haz clic en "Analizar con IA" para recibir tu diagnóstico</p>
                 </div>
             </div>
 
-            <!-- Lista de transacciones -->
             <div class="transactions-section">
-                <div class="transactions-header">
-                    <h2>📋 Historial de Transacciones</h2>
-                    <span class="transaction-count" id="transactionCount">0 transacciones</span>
-                </div>
+                <h2>📋 Historial</h2>
                 <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">📭 No hay transacciones registradas</p>
+                    <p class="empty-message">No hay transacciones</p>
                 </div>
             </div>
         </div>
