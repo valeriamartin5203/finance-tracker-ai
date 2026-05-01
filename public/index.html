@@ -3,19 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceTracker AI | Gestión Financiera Inteligente</title>
+    <title>FinanceTracker AI | Asesor Financiero Inteligente</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
+    <!-- MODAL DE PERFIL FINANCIERO -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-icon">📊</span>
+                <h2>Configuración Inicial</h2>
+                <p>Completa tus datos para un diagnóstico financiero preciso</p>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label>💰 ¿Cuál es tu ingreso?</label>
+                        <input type="number" id="profileIncome" step="0.01" placeholder="Ej: 15000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📅 Frecuencia de ingreso</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="incomeFrequency" value="semanal" checked>
+                                <span>📆 Semanal</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="incomeFrequency" value="quincenal">
+                                <span>📅 Quincenal</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="incomeFrequency" value="mensual">
+                                <span>📆 Mensual</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🏠 ¿Cuánto pagas de renta/hipoteca al mes?</label>
+                        <input type="number" id="profileRent" step="0.01" placeholder="Ej: 5000" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>💡 ¿Cuánto pagas de servicios (luz, agua, internet, teléfono)?</label>
+                        <input type="number" id="profileServices" step="0.01" placeholder="Ej: 1500" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🛒 ¿Cuánto gastas en supermercado al mes?</label>
+                        <input type="number" id="profileGroceries" step="0.01" placeholder="Ej: 3000" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🚗 ¿Cuánto gastas en transporte al mes?</label>
+                        <input type="number" id="profileTransport" step="0.01" placeholder="Ej: 2000" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>💳 ¿Tienes deudas?</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="hasDebt" value="no" checked>
+                                <span>✅ No</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="hasDebt" value="si">
+                                <span>⚠️ Sí</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="debtFields" style="display: none;">
+                        <div class="form-group">
+                            <label>💰 Monto total de deudas</label>
+                            <input type="number" id="profileDebtAmount" step="0.01" placeholder="Ej: 50000" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>📅 Tasa de interés anual (%)</label>
+                            <input type="number" id="profileDebtInterest" step="0.1" placeholder="Ej: 25" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>💰 ¿Cuánto tienes ahorrado actualmente?</label>
+                        <input type="number" id="profileSavings" step="0.01" placeholder="Ej: 10000" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🎯 ¿Cuál es tu meta financiera principal?</label>
+                        <select id="profileGoal">
+                            <option value="ahorro">Ahorrar para emergencias</option>
+                            <option value="casa">Comprar casa/departamento</option>
+                            <option value="auto">Comprar auto</option>
+                            <option value="viaje">Hacer un viaje</option>
+                            <option value="invertir">Invertir y hacer crecer mi dinero</option>
+                            <option value="libertad">Libertad financiera</option>
+                            <option value="deudas">Pagar deudas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📈 ¿Cuántos meses quieres proyectar?</label>
+                        <select id="profileProjection">
+                            <option value="3">3 meses</option>
+                            <option value="6">6 meses</option>
+                            <option value="12" selected>12 meses</option>
+                            <option value="24">24 meses</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">🎯 Comenzar mi diagnóstico financiero</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer" style="display: none;">
         <header>
             <div class="logo">
                 <span class="logo-icon">💰</span>
                 <h1>FinanceTracker AI</h1>
+                <span class="badge-experto">Experto Financiero IA</span>
             </div>
             <div class="controls">
+                <button id="editProfileBtn" class="btn-edit-profile">✏️ Editar Perfil</button>
                 <select id="currencySelect" class="currency-select">
                     <option value="USD">USD $</option>
                     <option value="EUR">€ EUR</option>
@@ -27,22 +140,32 @@
             </div>
         </header>
 
-        <!-- Main Dashboard -->
         <div class="dashboard">
+            <!-- Perfil resumen -->
+            <div class="profile-summary-card" id="profileSummary">
+                <div class="profile-summary-content">
+                    <span class="profile-emoji">👤</span>
+                    <div class="profile-info">
+                        <strong>Tu perfil financiero</strong>
+                        <span id="profileSummaryText">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="card income-card">
-                    <h3>Ingresos</h3>
+                    <h3>💰 Ingresos</h3>
                     <div class="amount" id="totalIncome">$0</div>
-                    <span class="trend">⬆️ +0%</span>
+                    <span class="trend" id="incomeTrend">📈 Total</span>
                 </div>
                 <div class="card expense-card">
-                    <h3>Gastos</h3>
+                    <h3>💸 Gastos</h3>
                     <div class="amount" id="totalExpenses">$0</div>
-                    <span class="trend">⬇️ -0%</span>
+                    <span class="trend" id="expenseTrend">📉 Total</span>
                 </div>
                 <div class="card balance-card">
-                    <h3>Balance</h3>
+                    <h3>⚖️ Balance</h3>
                     <div class="amount" id="balance">$0</div>
                     <span class="trend" id="balanceTrend">📊</span>
                 </div>
@@ -50,6 +173,9 @@
 
             <!-- Chart Section -->
             <div class="chart-section">
+                <div class="chart-header">
+                    <h2>📊 Distribución de Gastos</h2>
+                </div>
                 <div class="chart-container">
                     <canvas id="expenseChart"></canvas>
                 </div>
@@ -69,7 +195,7 @@
                         </div>
                         <div class="form-group">
                             <label>Descripción</label>
-                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado" required>
+                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado, Salario, etc." required>
                         </div>
                         <div class="form-group">
                             <label>Monto</label>
@@ -96,22 +222,28 @@
                 </form>
             </div>
 
-            <!-- AI Analysis Section -->
+            <!-- AI Expert Analysis Section -->
             <div class="ai-section">
                 <div class="ai-header">
-                    <h2>🤖 Análisis AI</h2>
-                    <button id="analyzeBtn" class="btn-ai">✨ Generar Recomendaciones</button>
+                    <div>
+                        <h2>🤖 Asesor Financiero IA</h2>
+                        <p class="ai-subtitle">10+ años de experiencia simulada | Banca Privada</p>
+                    </div>
+                    <button id="analyzeBtn" class="btn-ai">✨ Analizar con IA Experta</button>
                 </div>
                 <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">Haz clic en "Generar Recomendaciones" para recibir consejos personalizados basados en IA</p>
+                    <p class="placeholder">📊 Haz clic en "Analizar con IA Experta" para recibir un diagnóstico financiero profesional basado en tus datos reales</p>
                 </div>
             </div>
 
             <!-- Transactions List -->
             <div class="transactions-section">
-                <h2>📋 Historial de Transacciones</h2>
+                <div class="transactions-header">
+                    <h2>📋 Historial de Transacciones</h2>
+                    <span class="transaction-count" id="transactionCount">0 transacciones</span>
+                </div>
                 <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">No hay transacciones registradas</p>
+                    <p class="empty-message">📭 No hay transacciones registradas</p>
                 </div>
             </div>
         </div>

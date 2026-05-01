@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     min-height: 100vh;
     padding: 20px;
 }
@@ -21,17 +21,21 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     padding: 20px 30px;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .logo {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .logo-icon {
@@ -46,6 +50,22 @@ header {
     background-clip: text;
 }
 
+.badge-experto {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .currency-select {
     padding: 10px 15px;
     border: 2px solid #e0e0e0;
@@ -53,10 +73,27 @@ header {
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s;
+    background: white;
 }
 
 .currency-select:hover {
     border-color: #667eea;
+}
+
+.btn-edit-profile {
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    border: 1px solid #667eea;
+    padding: 8px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.btn-edit-profile:hover {
+    background: #667eea;
+    color: white;
 }
 
 /* Dashboard */
@@ -64,6 +101,40 @@ header {
     display: flex;
     flex-direction: column;
     gap: 25px;
+}
+
+/* Profile Summary Card */
+.profile-summary-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px 20px;
+    border-radius: 15px;
+    color: white;
+    margin-bottom: 0;
+}
+
+.profile-summary-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.profile-emoji {
+    font-size: 2rem;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-info strong {
+    display: block;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.profile-info span {
+    font-size: 0.9rem;
 }
 
 /* Summary Cards */
@@ -74,10 +145,11 @@ header {
 }
 
 .card {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     padding: 25px;
     border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s;
 }
 
@@ -110,28 +182,39 @@ header {
 }
 
 .trend {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #888;
 }
 
 /* Chart Section */
 .chart-section {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     padding: 20px;
     border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+    margin-bottom: 15px;
+}
+
+.chart-header h2 {
+    color: #333;
+    font-size: 1.2rem;
 }
 
 .chart-container {
-    max-height: 300px;
+    max-height: 350px;
 }
 
 /* Transaction Form */
 .transaction-form {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     padding: 25px;
     border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .transaction-form h2 {
@@ -164,6 +247,7 @@ header {
     border-radius: 10px;
     font-size: 1rem;
     transition: all 0.3s;
+    background: white;
 }
 
 .form-group input:focus,
@@ -182,6 +266,7 @@ header {
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s;
+    width: 100%;
 }
 
 .btn-primary:hover {
@@ -190,10 +275,10 @@ header {
 
 /* AI Section */
 .ai-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     padding: 25px;
     border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .ai-header {
@@ -209,11 +294,17 @@ header {
     color: white;
 }
 
+.ai-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
 .btn-ai {
-    background: white;
-    color: #667eea;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 25px;
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
@@ -222,41 +313,105 @@ header {
 
 .btn-ai:hover {
     transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
 }
 
 .ai-recommendations {
-    background: rgba(255,255,255,0.95);
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
     border-radius: 15px;
-    color: #333;
-    line-height: 1.6;
+    color: #1a1a2e;
+    line-height: 1.7;
+    min-height: 300px;
+    font-size: 0.95rem;
 }
 
 .ai-recommendations .placeholder {
     color: #999;
     text-align: center;
+    padding: 40px;
 }
 
-.ai-recommendations ol {
-    margin-left: 20px;
+.ai-recommendations table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
 }
 
-.ai-recommendations li {
-    margin-bottom: 10px;
+.ai-recommendations th,
+.ai-recommendations td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
 }
 
-/* Transactions List */
+.ai-recommendations th {
+    background: #667eea;
+    color: white;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.recommendations-content {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 10px;
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', system-ui;
+}
+
+.recommendations-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.recommendations-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.recommendations-content::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+/* Transactions Section */
 .transactions-section {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     padding: 25px;
     border-radius: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.transactions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .transactions-section h2 {
-    margin-bottom: 20px;
     color: #333;
+}
+
+.transaction-count {
+    color: #888;
+    font-size: 0.9rem;
 }
 
 .transactions-list {
@@ -331,10 +486,111 @@ header {
     padding: 40px;
 }
 
-/* Loading State */
-.loading {
-    opacity: 0.5;
-    pointer-events: none;
+/* Modal de perfil */
+.modal {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 25px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    text-align: center;
+    border-radius: 25px 25px 0 0;
+}
+
+.modal-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.modal-header h2 {
+    margin: 0 0 5px 0;
+}
+
+.modal-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.modal-body .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-body .form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Radio group */
+.radio-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radio-option:hover {
+    background: #e0e0e0;
+}
+
+.radio-option input {
+    margin: 0;
+    cursor: pointer;
+}
+
+.radio-option span {
+    cursor: pointer;
 }
 
 /* Responsive */
@@ -342,32 +598,54 @@ header {
     body {
         padding: 10px;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
     .summary-cards {
         grid-template-columns: 1fr;
     }
-    
+
     .ai-header {
         flex-direction: column;
         text-align: center;
     }
-    
+
     header {
         flex-direction: column;
-        gap: 15px;
+        text-align: center;
     }
-    
+
+    .controls {
+        justify-content: center;
+    }
+
     .transaction-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .transaction-amount {
         margin-right: 0;
+    }
+
+    .transactions-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .logo {
+        justify-content: center;
+    }
+    
+    .profile-summary-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .radio-group {
+        justify-content: center;
     }
 }
