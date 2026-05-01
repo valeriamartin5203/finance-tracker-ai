@@ -1,12 +1,23 @@
+// ============ VARIABLES GLOBALES ============
 let transactions = [];
 let expenseChart = null;
 let currentCurrency = 'MXN';
 let userProfile = {
-    monthlyIncome: 0, incomeFrequency: 'mensual', rent: 0, services: 0,
-    groceries: 0, transport: 0, hasDebt: false, debtAmount: 0,
-    debtInterest: 0, savings: 0, goal: 'ahorro', projectionMonths: 12
+    monthlyIncome: 0,
+    incomeFrequency: 'mensual',
+    rent: 0,
+    services: 0,
+    groceries: 0,
+    transport: 0,
+    hasDebt: false,
+    debtAmount: 0,
+    debtInterest: 0,
+    savings: 0,
+    goal: 'ahorro',
+    projectionMonths: 12
 };
 
+// ============ FUNCIONES AUXILIARES ============
 function getCurrencySymbol() {
     const symbols = { USD: '$', EUR: '€', MXN: '$', COP: '$', ARS: '$', GBP: '£' };
     return symbols[currentCurrency] || '$';
@@ -16,6 +27,32 @@ function formatCurrency(amount) {
     return `${getCurrencySymbol()}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getGoalText() {
+    const goals = {
+        'ahorro': 'Ahorrar para emergencias',
+        'casa': 'Comprar casa',
+        'auto': 'Comprar auto',
+        'viaje': 'Hacer un viaje',
+        'invertir': 'Invertir',
+        'libertad': 'Libertad financiera',
+        'deudas': 'Pagar deudas'
+    };
+    return goals[userProfile.goal] || userProfile.goal;
+}
+
+function toggleDebtFields(show) {
+    const debtFields = document.getElementById('debtFields');
+    if (debtFields) debtFields.style.display = show ? 'block' : 'none';
+}
+
+// ============ CÁLCULOS FINANCIEROS ============
 function calculateMonthlyIncome() {
     let monthly = userProfile.monthlyIncome;
     if (userProfile.incomeFrequency === 'semanal') return monthly * 4.33;
@@ -28,20 +65,61 @@ function calculateFixedExpenses() {
 }
 
 function calculateTotals() {
+    console.log('📊 Calculando totales...');
+    console.log('Transacciones:', transactions);
+    
     const income = calculateMonthlyIncome();
-    const variableExpenses = transactions.filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = calculateFixedExpenses() + variableExpenses;
-    return { income, totalExpenses, balance: income - totalExpenses };
+    console.log('💰 Ingreso mensual:', income);
+    
+    const variableExpenses = transactions
+        .filter(t => t.type === 'gasto')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+    console.log('💸 Gastos variables:', variableExpenses);
+    
+    const fixedExpenses = calculateFixedExpenses();
+    console.log('🏠 Gastos fijos:', fixedExpenses);
+    
+    const totalExpenses = fixedExpenses + variableExpenses;
+    const balance = income - totalExpenses;
+    
+    console.log('📊 Total gastos:', totalExpenses, 'Balance:', balance);
+    
+    return { income, totalExpenses, balance };
 }
 
+// ============ API CALLS ============
 async function loadData() {
     try {
-        const res = await fetch('/api/transactions');
-        const data = await res.json();
-        transactions = data.transactions || [];
+        console.log('📡 Cargando datos del servidor...');
+        const response = await fetch('/api/transactions');
+        const data = await response.json();
+        
+        console.log('📦 Datos recibidos:', data);
+        
+        if (data.transactions) {
+            transactions = data.transactions;
+            console.log(`✅ Cargadas ${transactions.length} transacciones`);
+        } else {
+            transactions = [];
+            console.warn('⚠️ No se recibieron transacciones');
+        }
+        
+        if (data.categories && data.categories.length > 0) {
+            const categorySelect = document.getElementById('categorySelect');
+            if (categorySelect) {
+                const currentValue = categorySelect.value;
+                categorySelect.innerHTML = data.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                if (currentValue && data.categories.includes(currentValue)) {
+                    categorySelect.value = currentValue;
+                }
+            }
+        }
+        
         updateUI();
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error en loadData:', error);
+        transactions = [];
     }
 }
 
@@ -49,22 +127,43 @@ async function loadProfile() {
     try {
         const res = await fetch('/api/profile');
         const data = await res.json();
-        if (data.profile) userProfile = data.profile;
+        if (data.profile) {
+            userProfile = data.profile;
+            console.log('✅ Perfil cargado:', userProfile);
+        }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error loading profile:', error);
     }
 }
 
 async function saveTransaction(transaction) {
     try {
-        await fetch('/api/transactions', {
+        console.log('💾 Guardando transacción:', transaction);
+        
+        const response = await fetch('/api/transactions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(transaction)
         });
-        await loadData();
+        
+        const data = await response.json();
+        console.log('📦 Respuesta del servidor:', data);
+        
+        if (data.success) {
+            console.log('✅ Transacción guardada correctamente');
+            await loadData();
+            return true;
+        } else {
+            console.error('❌ Error del servidor:', data);
+            alert('Error al guardar: ' + (data.error || 'Error desconocido'));
+            return false;
+        }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error en saveTransaction:', error);
+        alert('Error de conexión: ' + error.message);
+        return false;
     }
 }
 
@@ -74,7 +173,7 @@ async function deleteTransaction(id) {
         await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
         await loadData();
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error deleting transaction:', error);
     }
 }
 
@@ -94,29 +193,22 @@ async function getAIAnalysis() {
         const data = await res.json();
         return data.recommendations;
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error en análisis IA:', error);
         return '⚠️ Error al conectar con el análisis. Intenta de nuevo.';
     }
 }
 
+// ============ UI ACTUALIZACIONES ============
 function updateUI() {
     const { income, totalExpenses, balance } = calculateTotals();
+    
     document.getElementById('totalIncome').textContent = formatCurrency(income);
     document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
     document.getElementById('balance').textContent = formatCurrency(balance);
     
     const monthlyIncome = calculateMonthlyIncome();
-    const goalText = {
-        'ahorro': 'Ahorrar para emergencias',
-        'casa': 'Comprar casa',
-        'auto': 'Comprar auto',
-        'viaje': 'Hacer un viaje',
-        'invertir': 'Invertir',
-        'libertad': 'Libertad financiera',
-        'deudas': 'Pagar deudas'
-    };
     document.getElementById('profileSummaryText').textContent = 
-        `💰 Ingreso: ${formatCurrency(monthlyIncome)}/mes | 🎯 Meta: ${goalText[userProfile.goal] || userProfile.goal} | 💰 Ahorros: ${formatCurrency(userProfile.savings)}`;
+        `💰 Ingreso: ${formatCurrency(monthlyIncome)}/mes | 🎯 Meta: ${getGoalText()} | 💰 Ahorros: ${formatCurrency(userProfile.savings)}`;
     
     updateChart();
     renderTransactions();
@@ -199,16 +291,7 @@ function renderTransactions() {
     `).join('');
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function toggleDebtFields(show) {
-    document.getElementById('debtFields').style.display = show ? 'block' : 'none';
-}
-
+// ============ INICIALIZACIÓN ============
 async function initializeApp() {
     await loadProfile();
     
@@ -221,14 +304,20 @@ async function initializeApp() {
         document.getElementById('appContainer').style.display = 'none';
     }
     
-    document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('dateInput');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
 }
 
+// ============ EVENTOS ============
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     
+    // Formulario de perfil
     document.getElementById('profileForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         userProfile = {
             monthlyIncome: parseFloat(document.getElementById('profileIncome').value) || 0,
             incomeFrequency: document.querySelector('input[name="incomeFrequency"]:checked').value,
@@ -255,6 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadData();
     });
     
+    // Botón editar perfil
     document.getElementById('editProfileBtn').addEventListener('click', () => {
         document.getElementById('profileIncome').value = userProfile.monthlyIncome;
         document.querySelector(`input[name="incomeFrequency"][value="${userProfile.incomeFrequency}"]`).checked = true;
@@ -274,12 +364,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('appContainer').style.display = 'none';
     });
     
+    // Mostrar/ocultar campos de deuda
     document.querySelectorAll('input[name="hasDebt"]').forEach(radio => {
         radio.addEventListener('change', (e) => toggleDebtFields(e.target.value === 'si'));
     });
     
+    // Formulario de transacción
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         const description = document.getElementById('descriptionInput').value;
         const amount = parseFloat(document.getElementById('amountInput').value);
         const category = document.getElementById('categorySelect').value;
@@ -287,16 +380,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = document.getElementById('dateInput').value;
         
         if (!description || isNaN(amount) || amount <= 0) {
-            alert('Completa todos los campos');
+            alert('Completa todos los campos correctamente');
             return;
         }
         
         await saveTransaction({ description, amount, category, type, date });
+        
         document.getElementById('transactionForm').reset();
         document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
         document.getElementById('typeSelect').value = 'ingreso';
     });
     
+    // Botón de análisis IA
     document.getElementById('analyzeBtn').addEventListener('click', async () => {
         const btn = document.getElementById('analyzeBtn');
         const container = document.getElementById('aiRecommendations');
@@ -308,10 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const analysis = await getAIAnalysis();
         container.innerHTML = `<div class="recommendations-content">${analysis.replace(/\n/g, '<br>')}</div>`;
         
-        btn.textContent = '✨ Analizar con IA';
+        btn.textContent = '✨ Analizar';
         btn.disabled = false;
     });
     
+    // Cambio de moneda
     document.getElementById('currencySelect').addEventListener('change', (e) => {
         currentCurrency = e.target.value;
         updateUI();
