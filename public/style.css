@@ -1,8 +1,4 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -11,10 +7,7 @@ body {
     padding: 20px;
 }
 
-.app-container {
-    max-width: 1400px;
-    margin: 0 auto;
-}
+.app-container { max-width: 1400px; margin: 0 auto; }
 
 header {
     display: flex;
@@ -28,12 +21,7 @@ header {
     gap: 15px;
 }
 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
+.logo { display: flex; align-items: center; gap: 15px; }
 .logo-icon { font-size: 2rem; }
 .logo h1 { font-size: 1.5rem; color: #667eea; }
 .badge-experto { background: #f093fb; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; }
@@ -52,7 +40,6 @@ header {
 }
 .profile-summary-content { display: flex; align-items: center; gap: 15px; }
 .profile-emoji { font-size: 2rem; }
-.profile-info strong { display: block; font-size: 0.8rem; opacity: 0.9; }
 
 .summary-cards {
     display: grid;
@@ -75,11 +62,7 @@ header {
     padding: 20px;
     border-radius: 20px;
 }
-.chart-container { 
-    max-height: 400px; 
-    display: flex;
-    justify-content: center;
-}
+.chart-container { max-height: 400px; display: flex; justify-content: center; }
 #expenseChart { max-height: 350px; max-width: 100%; }
 
 .transaction-form {

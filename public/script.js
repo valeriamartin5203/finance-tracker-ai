@@ -1,59 +1,21 @@
-// ============ VARIABLES GLOBALES ============
 let transactions = [];
 let expenseChart = null;
 let currentCurrency = 'MXN';
 let userProfile = {
-    monthlyIncome: 0,
-    incomeFrequency: 'mensual',
-    rent: 0,
-    services: 0,
-    groceries: 0,
-    transport: 0,
-    hasDebt: false,
-    debtAmount: 0,
-    debtInterest: 0,
-    savings: 0,
-    goal: 'ahorro',
-    projectionMonths: 12
+    monthlyIncome: 0, incomeFrequency: 'mensual', rent: 0, services: 0,
+    groceries: 0, transport: 0, hasDebt: false, debtAmount: 0,
+    debtInterest: 0, savings: 0, goal: 'ahorro', projectionMonths: 12
 };
 
-// ============ FUNCIONES AUXILIARES ============
 function getCurrencySymbol() {
     const symbols = { USD: '$', EUR: '€', MXN: '$', COP: '$', ARS: '$', GBP: '£' };
     return symbols[currentCurrency] || '$';
 }
 
 function formatCurrency(amount) {
-    const symbol = getCurrencySymbol();
-    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${getCurrencySymbol()}${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function getGoalText() {
-    const goals = {
-        'ahorro': 'Ahorrar para emergencias',
-        'casa': 'Comprar casa/departamento',
-        'auto': 'Comprar auto',
-        'viaje': 'Hacer un viaje',
-        'invertir': 'Invertir',
-        'libertad': 'Libertad financiera',
-        'deudas': 'Pagar deudas'
-    };
-    return goals[userProfile.goal] || userProfile.goal;
-}
-
-function toggleDebtFields(show) {
-    const debtFields = document.getElementById('debtFields');
-    if (debtFields) debtFields.style.display = show ? 'block' : 'none';
-}
-
-// ============ CÁLCULOS FINANCIEROS ============
 function calculateMonthlyIncome() {
     let monthly = userProfile.monthlyIncome;
     if (userProfile.incomeFrequency === 'semanal') return monthly * 4.33;
@@ -69,36 +31,17 @@ function calculateTotals() {
     const income = calculateMonthlyIncome();
     const variableExpenses = transactions.filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
     const totalExpenses = calculateFixedExpenses() + variableExpenses;
-    const balance = income - totalExpenses;
-    
-    console.log('📊 Cálculos:', { income, variableExpenses, fixedExpenses: calculateFixedExpenses(), totalExpenses, balance });
-    
-    return { income, totalExpenses, balance };
+    return { income, totalExpenses, balance: income - totalExpenses };
 }
 
-// ============ API CALLS ============
 async function loadData() {
     try {
-        console.log('📡 Cargando datos...');
         const res = await fetch('/api/transactions');
         const data = await res.json();
-        
         transactions = data.transactions || [];
-        
-        const categorySelect = document.getElementById('categorySelect');
-        if (categorySelect && data.categories) {
-            const currentValue = categorySelect.value;
-            categorySelect.innerHTML = data.categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            if (currentValue && data.categories.includes(currentValue)) {
-                categorySelect.value = currentValue;
-            }
-        }
-        
-        console.log(`✅ Cargadas ${transactions.length} transacciones`);
         updateUI();
-        
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error:', error);
     }
 }
 
@@ -106,38 +49,22 @@ async function loadProfile() {
     try {
         const res = await fetch('/api/profile');
         const data = await res.json();
-        if (data.profile) {
-            userProfile = data.profile;
-            updateProfileSummary();
-        }
+        if (data.profile) userProfile = data.profile;
     } catch (error) {
-        console.error('Error loading profile:', error);
-    }
-}
-
-async function saveProfile(profile) {
-    try {
-        await fetch('/api/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
-        });
-    } catch (error) {
-        console.error('Error saving profile:', error);
+        console.error('Error:', error);
     }
 }
 
 async function saveTransaction(transaction) {
     try {
-        const res = await fetch('/api/transactions', {
+        await fetch('/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transaction)
         });
-        const data = await res.json();
-        if (data.success) await loadData();
+        await loadData();
     } catch (error) {
-        console.error('Error saving transaction:', error);
+        console.error('Error:', error);
     }
 }
 
@@ -147,22 +74,7 @@ async function deleteTransaction(id) {
         await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
         await loadData();
     } catch (error) {
-        console.error('Error deleting transaction:', error);
-    }
-}
-
-async function classifyWithAI(description, amount) {
-    try {
-        const res = await fetch('/api/ai/classify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description, amount })
-        });
-        const data = await res.json();
-        return data.category;
-    } catch (error) {
-        console.error('AI classification error:', error);
-        return 'Otros';
+        console.error('Error:', error);
     }
 }
 
@@ -175,55 +87,53 @@ async function getAIAnalysis() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 transactions: transactions.filter(t => t.type === 'gasto'),
-                totalIncome: income,
-                totalExpenses: totalExpenses,
-                balance: balance,
-                currency: getCurrencySymbol(),
-                userProfile: userProfile
+                userProfile: userProfile,
+                currency: getCurrencySymbol()
             })
         });
         const data = await res.json();
         return data.recommendations;
     } catch (error) {
-        console.error('AI analysis error:', error);
-        return '⚠️ Error al conectar con IA. Intenta de nuevo.';
+        console.error('Error:', error);
+        return '⚠️ Error al conectar con el análisis. Intenta de nuevo.';
     }
 }
 
-// ============ UI ACTUALIZACIONES ============
 function updateUI() {
     const { income, totalExpenses, balance } = calculateTotals();
-    
     document.getElementById('totalIncome').textContent = formatCurrency(income);
     document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
     document.getElementById('balance').textContent = formatCurrency(balance);
     
+    const monthlyIncome = calculateMonthlyIncome();
+    const goalText = {
+        'ahorro': 'Ahorrar para emergencias',
+        'casa': 'Comprar casa',
+        'auto': 'Comprar auto',
+        'viaje': 'Hacer un viaje',
+        'invertir': 'Invertir',
+        'libertad': 'Libertad financiera',
+        'deudas': 'Pagar deudas'
+    };
+    document.getElementById('profileSummaryText').textContent = 
+        `💰 Ingreso: ${formatCurrency(monthlyIncome)}/mes | 🎯 Meta: ${goalText[userProfile.goal] || userProfile.goal} | 💰 Ahorros: ${formatCurrency(userProfile.savings)}`;
+    
     updateChart();
     renderTransactions();
-    updateProfileSummary();
 }
 
 function updateChart() {
     const canvas = document.getElementById('expenseChart');
-    if (!canvas) {
-        console.error('No se encontró el canvas');
-        return;
-    }
+    if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    
     const expensesByCategory = {};
+    
     transactions.filter(t => t.type === 'gasto').forEach(t => {
-        const cat = t.category || 'Otros';
-        expensesByCategory[cat] = (expensesByCategory[cat] || 0) + t.amount;
+        expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + t.amount;
     });
     
-    console.log('📊 Gastos por categoría:', expensesByCategory);
-    
-    if (expenseChart) {
-        expenseChart.destroy();
-        expenseChart = null;
-    }
+    if (expenseChart) expenseChart.destroy();
     
     if (Object.keys(expensesByCategory).length === 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -266,21 +176,14 @@ function updateChart() {
             }
         }
     });
-    
-    console.log('✅ Gráfico creado');
 }
 
 function renderTransactions() {
     const container = document.getElementById('transactionsList');
-    const countSpan = document.getElementById('transactionCount');
-    
     if (transactions.length === 0) {
         container.innerHTML = '<p class="empty-message">📭 No hay transacciones</p>';
-        if (countSpan) countSpan.textContent = '0 transacciones';
         return;
     }
-    
-    if (countSpan) countSpan.textContent = `${transactions.length} transacciones`;
     
     container.innerHTML = transactions.map(t => `
         <div class="transaction-item">
@@ -296,33 +199,36 @@ function renderTransactions() {
     `).join('');
 }
 
-function updateProfileSummary() {
-    const monthly = calculateMonthlyIncome();
-    document.getElementById('profileSummaryText').textContent = 
-        `💰 Ingreso: ${formatCurrency(monthly)}/mes | 🎯 Meta: ${getGoalText()} | 💰 Ahorros: ${formatCurrency(userProfile.savings)}`;
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-// ============ INICIALIZACIÓN ============
+function toggleDebtFields(show) {
+    document.getElementById('debtFields').style.display = show ? 'block' : 'none';
+}
+
 async function initializeApp() {
-    const modal = document.getElementById('profileModal');
-    const appContainer = document.getElementById('appContainer');
-    
     await loadProfile();
     
-    if (userProfile && userProfile.monthlyIncome > 0) {
-        modal.style.display = 'none';
-        appContainer.style.display = 'block';
+    if (userProfile.monthlyIncome > 0) {
+        document.getElementById('profileModal').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'block';
         await loadData();
     } else {
-        modal.style.display = 'flex';
-        appContainer.style.display = 'none';
+        document.getElementById('profileModal').style.display = 'flex';
+        document.getElementById('appContainer').style.display = 'none';
     }
     
     document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
     
     document.getElementById('profileForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
         userProfile = {
             monthlyIncome: parseFloat(document.getElementById('profileIncome').value) || 0,
             incomeFrequency: document.querySelector('input[name="incomeFrequency"]:checked').value,
@@ -338,9 +244,14 @@ async function initializeApp() {
             projectionMonths: parseInt(document.getElementById('profileProjection').value)
         };
         
-        await saveProfile(userProfile);
-        modal.style.display = 'none';
-        appContainer.style.display = 'block';
+        await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userProfile)
+        });
+        
+        document.getElementById('profileModal').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'block';
         await loadData();
     });
     
@@ -359,25 +270,19 @@ async function initializeApp() {
         document.getElementById('profileProjection').value = userProfile.projectionMonths;
         toggleDebtFields(userProfile.hasDebt);
         
-        modal.style.display = 'flex';
-        appContainer.style.display = 'none';
+        document.getElementById('profileModal').style.display = 'flex';
+        document.getElementById('appContainer').style.display = 'none';
     });
     
     document.querySelectorAll('input[name="hasDebt"]').forEach(radio => {
         radio.addEventListener('change', (e) => toggleDebtFields(e.target.value === 'si'));
     });
-}
-
-// ============ EVENTOS ============
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
     
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
         const description = document.getElementById('descriptionInput').value;
         const amount = parseFloat(document.getElementById('amountInput').value);
-        let category = document.getElementById('categorySelect').value;
+        const category = document.getElementById('categorySelect').value;
         const type = document.getElementById('typeSelect').value;
         const date = document.getElementById('dateInput').value;
         
@@ -386,18 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        if (type === 'gasto') {
-            const btn = e.submitter;
-            const originalText = btn.textContent;
-            btn.textContent = '🤖 Clasificando...';
-            btn.disabled = true;
-            category = await classifyWithAI(description, amount);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
-        
         await saveTransaction({ description, amount, category, type, date });
-        
         document.getElementById('transactionForm').reset();
         document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
         document.getElementById('typeSelect').value = 'ingreso';
@@ -409,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         btn.textContent = '🤔 Analizando...';
         btn.disabled = true;
-        container.innerHTML = '<div class="loading-spinner">🧠 Analizando tus datos...</div>';
+        container.innerHTML = '<div class="loading-spinner">🧠 Asesor financiero experto analizando tus datos...</div>';
         
         const analysis = await getAIAnalysis();
         container.innerHTML = `<div class="recommendations-content">${analysis.replace(/\n/g, '<br>')}</div>`;
@@ -421,13 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('currencySelect').addEventListener('change', (e) => {
         currentCurrency = e.target.value;
         updateUI();
-    });
-    
-    document.getElementById('typeSelect').addEventListener('change', (e) => {
-        const categoryGroup = document.querySelector('.form-group:has(#categorySelect)');
-        if (categoryGroup) {
-            categoryGroup.style.opacity = e.target.value === 'gasto' ? '0.6' : '1';
-        }
     });
 });
 
