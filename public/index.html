@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceTracker AI | Gestión Financiera Inteligente</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <span class="logo-icon">💰</span>
+                <h1>FinanceTracker AI</h1>
+            </div>
+            <div class="controls">
+                <select id="currencySelect" class="currency-select">
+                    <option value="USD">USD $</option>
+                    <option value="EUR">€ EUR</option>
+                    <option value="MXN">MX$ MXN</option>
+                    <option value="COP">COL$ COP</option>
+                    <option value="ARS">ARS$ ARS</option>
+                    <option value="GBP">£ GBP</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="card income-card">
+                    <h3>Ingresos</h3>
+                    <div class="amount" id="totalIncome">$0</div>
+                    <span class="trend">⬆️ +0%</span>
+                </div>
+                <div class="card expense-card">
+                    <h3>Gastos</h3>
+                    <div class="amount" id="totalExpenses">$0</div>
+                    <span class="trend">⬇️ -0%</span>
+                </div>
+                <div class="card balance-card">
+                    <h3>Balance</h3>
+                    <div class="amount" id="balance">$0</div>
+                    <span class="trend" id="balanceTrend">📊</span>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-section">
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Add Transaction Form -->
+            <div class="transaction-form">
+                <h2>📝 Registrar Transacción</h2>
+                <form id="transactionForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select id="typeSelect" required>
+                                <option value="ingreso">💰 Ingreso</option>
+                                <option value="gasto">💸 Gasto</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input type="number" id="amountInput" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="categorySelect" required>
+                                <option value="Comida">🍔 Comida</option>
+                                <option value="Transporte">🚗 Transporte</option>
+                                <option value="Entretenimiento">🎬 Entretenimiento</option>
+                                <option value="Servicios">💡 Servicios</option>
+                                <option value="Salud">🏥 Salud</option>
+                                <option value="Educación">📚 Educación</option>
+                                <option value="Otros">📦 Otros</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="dateInput" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">➕ Agregar Transacción</button>
+                </form>
+            </div>
+
+            <!-- AI Analysis Section -->
+            <div class="ai-section">
+                <div class="ai-header">
+                    <h2>🤖 Análisis AI</h2>
+                    <button id="analyzeBtn" class="btn-ai">✨ Generar Recomendaciones</button>
+                </div>
+                <div id="aiRecommendations" class="ai-recommendations">
+                    <p class="placeholder">Haz clic en "Generar Recomendaciones" para recibir consejos personalizados basados en IA</p>
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="transactions-section">
+                <h2>📋 Historial de Transacciones</h2>
+                <div class="transactions-list" id="transactionsList">
+                    <p class="empty-message">No hay transacciones registradas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
