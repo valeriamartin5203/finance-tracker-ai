@@ -723,3 +723,11 @@ header {
         justify-content: center;
     }
 }
+
+/* Agregar al final */
+small {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 5px;
+}
