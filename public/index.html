@@ -8,99 +8,32 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- MODAL DE PERFIL -->
-    <div id="profileModal" class="modal">
+    <!-- MODAL DE LOGIN/REGISTRO -->
+    <div id="authModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-icon">📊</span>
-                <h2>Configura tu perfil financiero</h2>
-                <p>Responde estas preguntas para un diagnóstico preciso</p>
+                <span class="modal-icon">🔐</span>
+                <h2 id="authTitle">Iniciar Sesión</h2>
             </div>
             <div class="modal-body">
-                <form id="profileForm">
+                <form id="authForm">
                     <div class="form-group">
-                        <label>💰 Ingreso mensual</label>
-                        <input type="number" id="profileIncome" step="0.01" placeholder="Ej: 15000" required>
+                        <label>📧 Correo electrónico</label>
+                        <input type="email" id="authEmail" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label>📅 Frecuencia</label>
-                        <div class="radio-group">
-                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="semanal"> Semanal</label>
-                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="quincenal"> Quincenal</label>
-                            <label class="radio-option"><input type="radio" name="incomeFrequency" value="mensual" checked> Mensual</label>
-                        </div>
+                        <label>🔒 Contraseña</label>
+                        <input type="password" id="authPassword" required>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>🏠 Renta/Hipoteca (mensual)</label>
-                        <input type="number" id="profileRent" step="0.01" value="0">
+                    <div id="authNameGroup" class="form-group" style="display: none;">
+                        <label>👤 Nombre</label>
+                        <input type="text" id="authName">
                     </div>
-                    
-                    <div class="form-group">
-                        <label>💡 Servicios (luz, agua, internet, teléfono)</label>
-                        <input type="number" id="profileServices" step="0.01" value="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>🛒 Supermercado</label>
-                        <input type="number" id="profileGroceries" step="0.01" value="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>🚗 Transporte</label>
-                        <input type="number" id="profileTransport" step="0.01" value="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>💳 ¿Tienes deudas?</label>
-                        <div class="radio-group">
-                            <label class="radio-option"><input type="radio" name="hasDebt" value="no" checked> No</label>
-                            <label class="radio-option"><input type="radio" name="hasDebt" value="si"> Sí</label>
-                        </div>
-                    </div>
-                    
-                    <div id="debtFields" style="display: none;">
-                        <div class="form-group">
-                            <label>💰 Monto total</label>
-                            <input type="number" id="profileDebtAmount" step="0.01" value="0">
-                        </div>
-                        <div class="form-group">
-                            <label>📅 Tasa de interés anual (%)</label>
-                            <input type="number" id="profileDebtInterest" step="0.1" value="0">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>💰 Ahorros actuales</label>
-                        <input type="number" id="profileSavings" step="0.01" value="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>🎯 Meta financiera principal</label>
-                        <select id="profileGoal">
-                            <option value="ahorro">Ahorrar para emergencias</option>
-                            <option value="casa">Comprar casa</option>
-                            <option value="auto">Comprar auto</option>
-                            <option value="viaje">Hacer un viaje</option>
-                            <option value="invertir">Invertir</option>
-                            <option value="libertad">Libertad financiera</option>
-                            <option value="deudas">Pagar deudas</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>📈 Proyección en meses</label>
-                        <select id="profileProjection">
-                            <option value="3">3 meses</option>
-                            <option value="6">6 meses</option>
-                            <option value="12" selected>12 meses</option>
-                            <option value="24">24 meses</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary">🎯 Comenzar diagnóstico</button>
+                    <button type="submit" class="btn-primary" id="authSubmitBtn">Ingresar</button>
                 </form>
+                <p style="text-align: center; margin-top: 15px;">
+                    <a href="#" id="toggleAuthMode">¿No tienes cuenta? Regístrate</a>
+                </p>
             </div>
         </div>
     </div>
@@ -114,13 +47,14 @@
                 <span class="badge-experto">Asesor Experto 10+ años</span>
             </div>
             <div class="controls">
-                <button id="editProfileBtn" class="btn-edit-profile">✏️ Editar Perfil</button>
+                <button id="syncBtn" class="btn-edit-profile">🔄 Sincronizar</button>
+                <button id="emailReportBtn" class="btn-edit-profile">📧 Reporte semanal</button>
+                <button id="exportBtn" class="btn-edit-profile">📥 Exportar CSV</button>
+                <button id="logoutBtn" class="btn-edit-profile">🚪 Cerrar sesión</button>
                 <select id="currencySelect" class="currency-select">
                     <option value="MXN" selected>MX$ MXN</option>
                     <option value="USD">USD $</option>
                     <option value="EUR">€ EUR</option>
-                    <option value="COP">COL$ COP</option>
-                    <option value="ARS">ARS$ ARS</option>
                 </select>
             </div>
         </header>
@@ -135,6 +69,15 @@
                         <span id="profileSummaryText">Cargando...</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="filters-section">
+                <select id="monthFilter" class="filter-select">
+                    <option value="all">📅 Todos los meses</option>
+                </select>
+                <input type="text" id="tagFilter" class="filter-input" placeholder="🏷️ Filtrar por etiqueta">
+                <button id="clearFiltersBtn" class="btn-secondary">Limpiar filtros</button>
             </div>
 
             <!-- Tarjetas de resumen -->
@@ -153,15 +96,23 @@
                 </div>
             </div>
 
-            <!-- Gráfica -->
+            <!-- Gráfica de evolución mensual (NUEVO) -->
             <div class="chart-section">
-                <h2>📊 Distribución de Gastos por Categoría</h2>
+                <h2>📈 Evolución Mensual</h2>
+                <div class="chart-container">
+                    <canvas id="trendChart" width="800" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica de distribución -->
+            <div class="chart-section">
+                <h2>📊 Distribución de Gastos</h2>
                 <div class="chart-container">
                     <canvas id="expenseChart" width="400" height="400"></canvas>
                 </div>
             </div>
 
-            <!-- Formulario -->
+            <!-- Formulario de transacción -->
             <div class="transaction-form">
                 <h2>📝 Registrar Transacción</h2>
                 <form id="transactionForm">
@@ -194,6 +145,10 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label>Etiquetas</label>
+                            <input type="text" id="tagsInput" placeholder="#urgente #ocio (separar con espacios)">
+                        </div>
+                        <div class="form-group">
                             <label>Fecha</label>
                             <input type="date" id="dateInput" required>
                         </div>
@@ -202,25 +157,47 @@
                 </form>
             </div>
 
+            <!-- Sección de Recordatorios (NUEVO) -->
+            <div class="reminders-section">
+                <h2>⏰ Recordatorios de Pagos</h2>
+                <div id="remindersList" class="reminders-list">
+                    <p class="empty-message">No hay recordatorios</p>
+                </div>
+                <form id="reminderForm" class="reminder-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="reminderName" placeholder="Nombre (ej: Renta)" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="reminderAmount" step="0.01" placeholder="Monto" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="date" id="reminderDate" required>
+                        </div>
+                        <button type="submit" class="btn-secondary">➕ Agregar recordatorio</button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Análisis IA -->
             <div class="ai-section">
                 <div class="ai-header">
                     <div>
                         <h2>🤖 Asesor Financiero IA</h2>
-                        <p class="ai-subtitle">Experto con 10+ años de experiencia en banca privada</p>
+                        <p class="ai-subtitle">Experto con 10+ años de experiencia</p>
                     </div>
-                    <button id="analyzeBtn" class="btn-ai">✨ Analizar con IA Experta</button>
+                    <button id="analyzeBtn" class="btn-ai">✨ Analizar</button>
                 </div>
                 <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">📊 Haz clic en "Analizar con IA Experta" para recibir tu diagnóstico financiero personalizado</p>
+                    <p class="placeholder">📊 Haz clic en "Analizar" para tu diagnóstico</p>
                 </div>
             </div>
 
             <!-- Historial -->
             <div class="transactions-section">
-                <h2>📋 Historial de Transacciones</h2>
+                <h2>📋 Historial</h2>
                 <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">No hay transacciones registradas</p>
+                    <p class="empty-message">No hay transacciones</p>
                 </div>
             </div>
         </div>
