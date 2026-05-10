@@ -1,86 +1,105 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============ CONEXIÓN A MONGODB - CORREGIDA ============
-const MONGODB_URI = process.env.MONGODB_URI;
+// ============ CONFIGURACIÓN DE ARCHIVOS JSON ============
+const DATA_DIR = path.join(__dirname, 'data');
+const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
+const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
 
-console.log('🔍 Verificando MONGODB_URI:', MONGODB_URI ? '✅ Definida' : '❌ NO DEFINIDA');
-
-if (!MONGODB_URI) {
-  console.error('❌ ERROR CRÍTICO: MONGODB_URI no está definida');
-  console.error('💡 Ve a Render → Environment Variables → Agrega MONGODB_URI');
-  // No detenemos el proceso, pero logueamos el error
-} else {
-  // Opciones de conexión para evitar timeout
-  const mongooseOptions = {
-    serverSelectionTimeoutMS: 30000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 30000,
-    maxPoolSize: 10,
-    minPoolSize: 1,
-    retryWrites: true,
-    retryReads: true
-  };
-
-  console.log('📡 Conectando a MongoDB Atlas...');
-  
-  mongoose.connect(MONGODB_URI, mongooseOptions)
-    .then(() => {
-      console.log('✅ Conectado a MongoDB Atlas exitosamente');
-      console.log(`📊 Base de datos: ${mongoose.connection.db.databaseName}`);
-    })
-    .catch(err => {
-      console.error('❌ Error conectando a MongoDB:', err.message);
-      console.error('💡 VERIFICA EN MONGODB ATLAS:');
-      console.error('   1. La contraseña es correcta');
-      console.error('   2. La IP 0.0.0.0/0 está en Network Access');
-    });
-
-  mongoose.connection.on('error', err => {
-    console.error('❌ Error en conexión MongoDB:', err.message);
-  });
-
-  mongoose.connection.on('disconnected', () => {
-    console.log('⚠️ MongoDB desconectado. Intentando reconectar...');
-  });
+// Crear directorio data si no existe
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// ============ MODELOS ============
-const transactionSchema = new mongoose.Schema({
-  description: { type: String, required: true },
-  amount: { type: Number, required: true },
-  category: { type: String, required: true, default: 'Otros' },
-  type: { type: String, enum: ['ingreso', 'gasto'], required: true },
-  date: { type: String, required: true },
-  userId: { type: String, default: 'default' },
-  createdAt: { type: Date, default: Date.now }
-});
+// Crear archivos si no existen
+if (!fs.existsSync(TRANSACTIONS_FILE)) {
+  fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify([], null, 2));
+}
 
-const profileSchema = new mongoose.Schema({
-  userId: { type: String, default: 'default', unique: true },
-  monthlyIncome: { type: Number, default: 0 },
-  incomeFrequency: { type: String, default: 'mensual' },
-  rent: { type: Number, default: 0 },
-  services: { type: Number, default: 0 },
-  groceries: { type: Number, default: 0 },
-  transport: { type: Number, default: 0 },
-  hasDebt: { type: Boolean, default: false },
-  debtAmount: { type: Number, default: 0 },
-  debtInterest: { type: Number, default: 0 },
-  savings: { type: Number, default: 0 },
-  goal: { type: String, default: 'ahorro' },
-  projectionMonths: { type: Number, default: 12 }
-});
+if (!fs.existsSync(PROFILE_FILE)) {
+  const defaultProfile = {
+    userId: 'default',
+    monthlyIncome: 0,
+    incomeFrequency: 'mensual',
+    rent: 0,
+    services: 0,
+    groceries: 0,
+    transport: 0,
+    hasDebt: false,
+    debtAmount: 0,
+    debtInterest: 0,
+    savings: 0,
+    goal: 'ahorro',
+    projectionMonths: 12,
+    updatedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(PROFILE_FILE, JSON.stringify(defaultProfile, null, 2));
+}
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
-const Profile = mongoose.model('Profile', profileSchema);
+// ============ FUNCIONES DE LECTURA/ESCRITURA ============
 
-// ============ INICIALIZAR GEMINI - CORREGIDO ============
+function readTransactions() {
+  try {
+    const data = fs.readFileSync(TRANSACTIONS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error leyendo transacciones:', error);
+    return [];
+  }
+}
+
+function writeTransactions(transactions) {
+  try {
+    fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify(transactions, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error guardando transacciones:', error);
+    return false;
+  }
+}
+
+function readProfile() {
+  try {
+    const data = fs.readFileSync(PROFILE_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error leyendo perfil:', error);
+    return {
+      userId: 'default',
+      monthlyIncome: 0,
+      incomeFrequency: 'mensual',
+      rent: 0,
+      services: 0,
+      groceries: 0,
+      transport: 0,
+      hasDebt: false,
+      debtAmount: 0,
+      debtInterest: 0,
+      savings: 0,
+      goal: 'ahorro',
+      projectionMonths: 12
+    };
+  }
+}
+
+function writeProfile(profile) {
+  try {
+    profile.updatedAt = new Date().toISOString();
+    fs.writeFileSync(PROFILE_FILE, JSON.stringify(profile, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error guardando perfil:', error);
+    return false;
+  }
+}
+
+// ============ INICIALIZAR GEMINI ============
 let genAI = null;
 try {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -88,8 +107,7 @@ try {
     genAI = new GoogleGenerativeAI(apiKey);
     console.log('✅ Gemini IA inicializada');
   } else {
-    console.log('⚠️ No hay API Key válida de Gemini');
-    console.log('💡 Ve a https://aistudio.google.com/ y obtén una API Key');
+    console.log('⚠️ No hay API Key válida de Gemini, usando modo local');
   }
 } catch (error) {
   console.log('⚠️ Error inicializando Gemini:', error.message);
@@ -99,9 +117,11 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Tasas de cambio
-const exchangeRates = { USD: 1, EUR: 0.92, MXN: 17.50, COP: 4000, ARS: 850, GBP: 0.79 };
+const exchangeRates = {
+  USD: 1, EUR: 0.92, MXN: 17.50, COP: 4000, ARS: 850, GBP: 0.79
+};
 
-// ============ FUNCIÓN DE RESPALDO SIN IA ============
+// ============ FUNCIÓN DE ANÁLISIS LOCAL ============
 function generarAnalisisLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency) {
   const goalText = {
     'ahorro': 'ahorrar para emergencias',
@@ -113,43 +133,79 @@ function generarAnalisisLocal(monthlyIncome, totalExpenses, balance, savingsRate
     'deudas': 'pagar deudas'
   };
   
-  return `🎯 **DIAGNÓSTICO FINANCIERO**
-Basado en tus datos, tu tasa de ahorro actual es del ${savingsRate}%.
+  let analysis = `🎯 **DIAGNÓSTICO FINANCIERO**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 **RADIOGRAFÍA FINANCIERA**
+Basado en tus datos, tu tasa de ahorro actual es del ${savingsRate}%. `;
+  
+  if (savingsRate >= 20) {
+    analysis += `¡Excelente! Estás por encima del promedio.`;
+  } else if (savingsRate >= 10) {
+    analysis += `Vas por buen camino, pero puedes llegar al 20%.`;
+  } else {
+    analysis += `Necesitas aumentar tu ahorro urgentemente.`;
+  }
+
+  analysis += `\n\n📊 **RADIOGRAFÍA FINANCIERA**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 | Indicador | Tu valor | Ideal | Estatus |
+|-----------|----------|-------|---------|
 | Tasa de ahorro | ${savingsRate}% | 20% | ${savingsRate >= 20 ? '✅ Excelente' : savingsRate >= 10 ? '⚠️ Mejorable' : '🔴 Crítica'} |
 | Gastos fijos | ${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% | <50% | ${fixedExpenses/monthlyIncome <= 0.5 ? '✅ Controlado' : '🔴 Excesivo'} |
 
 🔍 **3 RECOMENDACIONES PRIORITARIAS**
-1. 🎯 Automatiza un ahorro del ${Math.min(20, parseInt(savingsRate) + 10)}% de tu ingreso el día que te pagan
-2. 💡 Reduce tus gastos fijos en un 10% este mes (revisa suscripciones, negocia servicios)
-3. 📊 Registra todos tus gastos diariamente para identificar patrones de gasto hormiga
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💼 **ESTRATEGIA PARA TU META: ${goalText[userProfile?.goal] || 'mejorar finanzas'}**
-• Semana 1: Abre una cuenta separada para ahorro (sin tarjeta)
-• Semana 2: Reduce 20% tu categoría de mayor gasto
-• Semana 3-4: Construye fondo de emergencia de 3 meses
+1. 🎯 **Automatiza tu ahorro**
+   Configura una transferencia automática del ${Math.min(20, parseInt(savingsRate) + 10)}% de tu ingreso el día que te pagan.
 
-💰 **PROYECCIÓN A ${userProfile?.projectionMonths || 12} MESES**
+2. 💡 **Reduce gastos fijos**
+   Revisa tus suscripciones y servicios. Intenta reducir un 10% este mes.
+
+3. 📊 **Control de gastos hormiga**
+   Registra todos los gastos menores durante 30 días. Identifica patrones.
+
+💼 **ESTRATEGIA PARA ${(userProfile?.projectionMonths || 12)} MESES**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Meta: ${goalText[userProfile?.goal] || 'mejorar finanzas'}**
+
+• **Semana 1:** Abre una cuenta separada para ahorro (sin tarjeta de débito)
+• **Semana 2:** Reduce 20% tu categoría de mayor gasto
+• **Semana 3-4:** Construye fondo de emergencia de 3 meses
+
+💰 **PROYECCIÓN DE AHORRO**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • Ahorro actual: ${currency} ${(userProfile?.savings || 0).toLocaleString()}
-• Meta alcanzable: ${currency} ${(((userProfile?.savings || 0) + (monthlyIncome * 0.2 * (userProfile?.projectionMonths || 12)))).toLocaleString()}
+• Meta en ${userProfile?.projectionMonths || 12} meses: ${currency} ${(((userProfile?.savings || 0) + (monthlyIncome * 0.2 * (userProfile?.projectionMonths || 12)))).toLocaleString()}`;
 
-${userProfile?.hasDebt && userProfile?.debtAmount > 0 ? `💳 **ESTRATEGIA DE DEUDAS**
-• Destina el 30% de tu balance mensual (${currency} ${(balance * 0.3).toLocaleString()}) a pagar deudas
+  if (userProfile?.hasDebt && userProfile?.debtAmount > 0) {
+    analysis += `\n\n💳 **ESTRATEGIA DE DEUDAS**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Destina el 30% de tu balance mensual a pagar deudas
 • Método: Paga primero la deuda con mayor tasa de interés
-` : ''}
+• Tiempo estimado: ${Math.ceil(userProfile.debtAmount / (balance * 0.3))} meses libre de deudas`;
+  }
 
-🎓 **CONSEJO DE EXPERTO**
-"El dinero que no gastas hoy y lo inviertes, se multiplica solo. Empieza HOY aunque sea con ${currency}100."
+  analysis += `\n\n🎓 **CONSEJO DE EXPERTO**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"El dinero que no gastas hoy y lo inviertes, se multiplica solo. Cada peso que ahorras es un empleado que trabaja 24/7 para ti."
 
 💪 **COMPROMISO SEMANAL**
-"Esta semana ahorraré el ${Math.min(20, parseInt(savingsRate) + 5)}% de mi próximo ingreso antes de gastar."`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Esta semana ahorraré el ${Math.min(20, parseInt(savingsRate) + 5)}% de mi próximo ingreso ANTES de gastar."`;
+
+  return analysis;
 }
 
 // ============ ENDPOINTS ============
 
-// Análisis financiero con IA - CORREGIDO (modelo correcto)
+// Análisis financiero con IA
 app.post('/api/ai/analyze', async (req, res) => {
   try {
     const { transactions, userProfile, currency } = req.body;
@@ -177,26 +233,25 @@ app.post('/api/ai/analyze', async (req, res) => {
       return res.json({ recommendations: generarAnalisisLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency) });
     }
     
-    // MODELO CORRECTO DE GEMINI
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     const prompt = `Eres un ASESOR FINANCIERO EXPERTO con 10+ años de experiencia.
 
 DATOS DEL CLIENTE:
 💰 Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
-🏠 Gastos fijos (renta, servicios, super, transporte): ${currency} ${fixedExpenses.toLocaleString()}
+🏠 Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()}
 💸 Gastos variables: ${currency} ${variableExpenses.toLocaleString()}
-📊 Total gastos: ${currency} ${totalExpenses.toLocaleString()}
-⚖️ Balance mensual: ${currency} ${balance.toLocaleString()}
+⚖️ Balance: ${currency} ${balance.toLocaleString()}
 📈 Tasa de ahorro: ${savingsRate}%
-🎯 Meta financiera: ${userProfile?.goal || 'mejorar finanzas'}
+🎯 Meta: ${userProfile?.goal || 'mejorar finanzas'}
 ${topCategory ? `🔥 Mayor gasto: ${topCategory[0]} (${currency} ${topCategory[1].toLocaleString()})` : ''}
 
-Da 3 recomendaciones específicas y prácticas con este formato exacto:
+Da 3 recomendaciones específicas con este formato:
+**1.** [Recomendación con números]
+**2.** [Segunda recomendación]
+**3.** [Tercera recomendación]
 
-**Recomendación 1:** [acción específica con números]
-**Recomendación 2:** [segunda acción con fecha límite]
-**Recomendación 3:** [tercera acción medible]`;
+Además, da una frase motivacional personalizada.`;
 
     const result = await model.generateContent(prompt);
     const recommendations = result.response.text();
@@ -221,35 +276,22 @@ Da 3 recomendaciones específicas y prácticas con este formato exacto:
 
 // ============ CRUD TRANSACCIONES ============
 
-app.get('/api/transactions', async (req, res) => {
+app.get('/api/transactions', (req, res) => {
   try {
-    // Verificar conexión antes de consultar
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB no conectado, devolviendo array vacío');
-      return res.json({ transactions: [], categories: ['Comida', 'Transporte', 'Entretenimiento', 'Servicios', 'Salud', 'Educacion', 'Otros'] });
-    }
-    
-    const transactions = await Transaction.find({ userId: 'default' }).sort({ date: -1 });
+    const transactions = readTransactions();
     console.log(`📡 Enviando ${transactions.length} transacciones`);
     res.json({ 
       transactions, 
       categories: ['Comida', 'Transporte', 'Entretenimiento', 'Servicios', 'Salud', 'Educacion', 'Otros'] 
     });
   } catch (error) {
-    console.error('Error fetching transactions:', error.message);
+    console.error('Error fetching transactions:', error);
     res.json({ transactions: [], categories: ['Comida', 'Transporte', 'Entretenimiento', 'Servicios', 'Salud', 'Educacion', 'Otros'] });
   }
 });
 
-app.post('/api/transactions', async (req, res) => {
+app.post('/api/transactions', (req, res) => {
   try {
-    // Verificar conexión antes de guardar
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB no conectado, guardando en memoria temporal');
-      // Por ahora respondemos éxito para no bloquear al usuario
-      return res.json({ success: true, warning: 'Guardado localmente, MongoDB no conectado' });
-    }
-    
     console.log('📥 Recibiendo transacción:', req.body);
     
     const { description, amount, category, type, date } = req.body;
@@ -258,85 +300,101 @@ app.post('/api/transactions', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Faltan campos requeridos' });
     }
     
-    const newTransaction = new Transaction({
+    const transactions = readTransactions();
+    
+    const newTransaction = {
+      _id: Date.now().toString(),
       description: String(description),
       amount: Number(amount),
       category: String(category),
       type: type === 'ingreso' ? 'ingreso' : 'gasto',
       date: date || new Date().toISOString().split('T')[0],
-      userId: 'default'
-    });
+      userId: 'default',
+      createdAt: new Date().toISOString()
+    };
     
-    const saved = await newTransaction.save();
-    console.log('✅ Transacción guardada:', saved._id);
-    res.json({ success: true, transaction: saved });
+    transactions.unshift(newTransaction);
+    writeTransactions(transactions);
+    
+    console.log('✅ Transacción guardada:', newTransaction._id);
+    res.json({ success: true, transaction: newTransaction });
     
   } catch (error) {
-    console.error('❌ Error en POST /api/transactions:', error.message);
-    res.json({ success: true, warning: 'Error temporal, intenta de nuevo' });
+    console.error('❌ Error en POST /api/transactions:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.delete('/api/transactions/:id', async (req, res) => {
+app.delete('/api/transactions/:id', (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.json({ success: true });
-    }
-    await Transaction.findByIdAndDelete(req.params.id);
+    const id = req.params.id;
+    let transactions = readTransactions();
+    transactions = transactions.filter(t => t._id !== id);
+    writeTransactions(transactions);
+    console.log('✅ Transacción eliminada:', id);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting transaction:', error.message);
-    res.json({ success: true });
+    console.error('Error deleting transaction:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // ============ PERFIL DE USUARIO ============
-app.get('/api/profile', async (req, res) => {
+
+app.get('/api/profile', (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB no conectado, devolviendo perfil por defecto');
-      return res.json({ profile: { monthlyIncome: 0, incomeFrequency: 'mensual', rent: 0, services: 0, groceries: 0, transport: 0, hasDebt: false, debtAmount: 0, debtInterest: 0, savings: 0, goal: 'ahorro', projectionMonths: 12 } });
-    }
-    
-    let profile = await Profile.findOne({ userId: 'default' });
-    if (!profile) {
-      profile = new Profile({ userId: 'default' });
-      await profile.save();
-    }
+    const profile = readProfile();
+    console.log('📡 Perfil enviado');
     res.json({ profile });
   } catch (error) {
-    console.error('Error fetching profile:', error.message);
-    res.json({ profile: { monthlyIncome: 0, incomeFrequency: 'mensual', rent: 0, services: 0, groceries: 0, transport: 0, hasDebt: false, debtAmount: 0, debtInterest: 0, savings: 0, goal: 'ahorro', projectionMonths: 12 } });
+    console.error('Error fetching profile:', error);
+    res.json({ profile: {
+      monthlyIncome: 0,
+      incomeFrequency: 'mensual',
+      rent: 0,
+      services: 0,
+      groceries: 0,
+      transport: 0,
+      hasDebt: false,
+      debtAmount: 0,
+      debtInterest: 0,
+      savings: 0,
+      goal: 'ahorro',
+      projectionMonths: 12
+    } });
   }
 });
 
-app.post('/api/profile', async (req, res) => {
+app.post('/api/profile', (req, res) => {
   try {
     console.log('📥 Guardando perfil:', req.body);
-    
-    if (mongoose.connection.readyState !== 1) {
-      console.log('⚠️ MongoDB no conectado, perfil no guardado persistentemente');
-      return res.json({ success: true, warning: 'Perfil guardado temporalmente' });
-    }
-    
-    await Profile.findOneAndUpdate(
-      { userId: 'default' },
-      req.body,
-      { upsert: true, new: true }
-    );
+    const profile = req.body;
+    profile.userId = 'default';
+    writeProfile(profile);
     console.log('✅ Perfil guardado');
     res.json({ success: true });
   } catch (error) {
-    console.error('Error saving profile:', error.message);
-    res.json({ success: true });
+    console.error('Error saving profile:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // ============ TASAS DE CAMBIO ============
-app.get('/api/rates', (req, res) => res.json({ rates: exchangeRates }));
+app.get('/api/rates', (req, res) => {
+  res.json({ rates: exchangeRates });
+});
 
+app.post('/api/convert', (req, res) => {
+  const { amount, from, to } = req.body;
+  const amountInUSD = amount / exchangeRates[from];
+  const convertedAmount = amountInUSD * exchangeRates[to];
+  res.json({ amount: convertedAmount, rate: exchangeRates[to] / exchangeRates[from] });
+});
+
+// ============ INICIAR SERVIDOR ============
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`🤖 IA: ${genAI ? 'ACTIVA' : 'DESACTIVADA (usando modo local)'}`);
-  console.log(`💾 MongoDB: ${mongoose.connection.readyState === 1 ? 'CONECTADO' : 'DESCONECTADO'}`);
+  console.log(`🚀 FinanceTracker AI corriendo en http://localhost:${PORT}`);
+  console.log(`🤖 IA: ${genAI ? 'ACTIVA (Gemini)' : 'DESACTIVADA (usando modo local experto)'}`);
+  console.log(`💾 Datos guardados en: ${DATA_DIR}`);
+  console.log(`📁 Archivos: transactions.json y profile.json`);
 });

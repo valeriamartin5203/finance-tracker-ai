@@ -14,7 +14,7 @@
             <div class="modal-header">
                 <span class="modal-icon">📊</span>
                 <h2>Configura tu perfil financiero</h2>
-                <p>Completa estos datos para un diagnóstico preciso</p>
+                <p>Responde estas preguntas para un diagnóstico preciso</p>
             </div>
             <div class="modal-body">
                 <form id="profileForm">
@@ -99,7 +99,7 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn-primary">🎯 Comenzar</button>
+                    <button type="submit" class="btn-primary">🎯 Comenzar diagnóstico</button>
                 </form>
             </div>
         </div>
@@ -131,31 +131,31 @@
                 <div class="profile-summary-content">
                     <span class="profile-emoji">👤</span>
                     <div class="profile-info">
-                        <strong>Tu perfil</strong>
+                        <strong>Tu perfil financiero</strong>
                         <span id="profileSummaryText">Cargando...</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Tarjetas -->
+            <!-- Tarjetas de resumen -->
             <div class="summary-cards">
                 <div class="card income-card">
-                    <h3>💰 Ingresos</h3>
+                    <h3>💰 Ingresos Mensuales</h3>
                     <div class="amount" id="totalIncome">$0</div>
                 </div>
                 <div class="card expense-card">
-                    <h3>💸 Gastos</h3>
+                    <h3>💸 Gastos Mensuales</h3>
                     <div class="amount" id="totalExpenses">$0</div>
                 </div>
                 <div class="card balance-card">
-                    <h3>⚖️ Balance</h3>
+                    <h3>⚖️ Balance Mensual</h3>
                     <div class="amount" id="balance">$0</div>
                 </div>
             </div>
 
             <!-- Gráfica -->
             <div class="chart-section">
-                <h2>📊 Distribución de Gastos</h2>
+                <h2>📊 Distribución de Gastos por Categoría</h2>
                 <div class="chart-container">
                     <canvas id="expenseChart" width="400" height="400"></canvas>
                 </div>
@@ -198,7 +198,7 @@
                             <input type="date" id="dateInput" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary">➕ Agregar</button>
+                    <button type="submit" class="btn-primary">➕ Agregar Transacción</button>
                 </form>
             </div>
 
@@ -207,20 +207,20 @@
                 <div class="ai-header">
                     <div>
                         <h2>🤖 Asesor Financiero IA</h2>
-                        <p class="ai-subtitle">Experto con 10+ años de experiencia</p>
+                        <p class="ai-subtitle">Experto con 10+ años de experiencia en banca privada</p>
                     </div>
-                    <button id="analyzeBtn" class="btn-ai">✨ Analizar</button>
+                    <button id="analyzeBtn" class="btn-ai">✨ Analizar con IA Experta</button>
                 </div>
                 <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">📊 Haz clic en "Analizar" para tu diagnóstico personalizado</p>
+                    <p class="placeholder">📊 Haz clic en "Analizar con IA Experta" para recibir tu diagnóstico financiero personalizado</p>
                 </div>
             </div>
 
             <!-- Historial -->
             <div class="transactions-section">
-                <h2>📋 Historial</h2>
+                <h2>📋 Historial de Transacciones</h2>
                 <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">No hay transacciones</p>
+                    <p class="empty-message">No hay transacciones registradas</p>
                 </div>
             </div>
         </div>
