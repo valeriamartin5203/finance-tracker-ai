@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- MODAL DE LOGIN/REGISTRO (PRIMERO) -->
+    <!-- MODAL LOGIN -->
     <div id="authModal" class="modal">
         <div class="modal-content glass">
             <div class="modal-header">
@@ -20,166 +20,76 @@
             </div>
             <div class="modal-body">
                 <form id="authForm">
-                    <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="authEmail" placeholder="correo@ejemplo.com" required>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="authPassword" placeholder="Contraseña" required>
-                    </div>
-                    <div id="authNameGroup" style="display: none;">
-                        <div class="input-group">
-                            <i class="fas fa-user"></i>
-                            <input type="text" id="authName" placeholder="Tu nombre">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary" id="authSubmitBtn">
-                        <i class="fas fa-arrow-right"></i> Ingresar
-                    </button>
+                    <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="authEmail" placeholder="correo@ejemplo.com" required></div>
+                    <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="authPassword" placeholder="Contraseña" required></div>
+                    <div id="authNameGroup" style="display:none"><div class="input-group"><i class="fas fa-user"></i><input type="text" id="authName" placeholder="Tu nombre"></div></div>
+                    <button type="submit" class="btn-primary" id="authSubmitBtn"><i class="fas fa-arrow-right"></i> Ingresar</button>
                 </form>
-                <p class="auth-toggle">
-                    <a href="#" id="toggleAuthMode">¿No tienes cuenta? Regístrate</a>
-                </p>
+                <p class="auth-toggle"><a href="#" id="toggleAuthMode">¿No tienes cuenta? Regístrate</a></p>
             </div>
         </div>
     </div>
 
-    <!-- MODAL DE PERFIL (SEGUNDO - DESPUÉS DE REGISTRARSE) -->
-    <div id="profileModal" class="modal" style="display: none;">
+    <!-- MODAL PERFIL -->
+    <div id="profileModal" class="modal" style="display:none">
         <div class="modal-content glass">
-            <div class="modal-header">
-                <div class="logo-icon-modal">📊</div>
-                <h2>Completa tu perfil</h2>
-                <p>Cuéntanos sobre tus finanzas</p>
-            </div>
+            <div class="modal-header"><div class="logo-icon-modal">📊</div><h2>Completa tu perfil</h2><p>Cuéntanos sobre tus finanzas</p></div>
             <div class="modal-body">
                 <form id="profileForm">
-                    <div class="input-group">
-                        <i class="fas fa-dollar-sign"></i>
-                        <input type="number" id="profileIncome" step="0.01" placeholder="Ingreso mensual" required>
-                    </div>
-                    
+                    <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="profileIncome" step="0.01" placeholder="Ingreso mensual" required></div>
                     <div class="radio-group">
-                        <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="semanal"> 📆 Semanal
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="quincenal"> 📅 Quincenal
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="mensual" checked> 📆 Mensual
-                        </label>
+                        <label class="radio-card"><input type="radio" name="incomeFrequency" value="semanal"> 📆 Semanal</label>
+                        <label class="radio-card"><input type="radio" name="incomeFrequency" value="quincenal"> 📅 Quincenal</label>
+                        <label class="radio-card"><input type="radio" name="incomeFrequency" value="mensual" checked> 📆 Mensual</label>
                     </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-home"></i>
-                        <input type="number" id="profileRent" step="0.01" placeholder="Renta/hipoteca" value="0">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-bolt"></i>
-                        <input type="number" id="profileServices" step="0.01" placeholder="Servicios" value="0">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-shopping-cart"></i>
-                        <input type="number" id="profileGroceries" step="0.01" placeholder="Supermercado" value="0">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-car"></i>
-                        <input type="number" id="profileTransport" step="0.01" placeholder="Transporte" value="0">
-                    </div>
-                    
+                    <div class="input-group"><i class="fas fa-home"></i><input type="number" id="profileRent" step="0.01" placeholder="Renta/hipoteca" value="0"></div>
+                    <div class="input-group"><i class="fas fa-bolt"></i><input type="number" id="profileServices" step="0.01" placeholder="Servicios" value="0"></div>
+                    <div class="input-group"><i class="fas fa-shopping-cart"></i><input type="number" id="profileGroceries" step="0.01" placeholder="Supermercado" value="0"></div>
+                    <div class="input-group"><i class="fas fa-car"></i><input type="number" id="profileTransport" step="0.01" placeholder="Transporte" value="0"></div>
                     <div class="radio-group">
-                        <label class="radio-card">
-                            <input type="radio" name="hasDebt" value="no" checked> ✅ Sin deudas
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="hasDebt" value="si"> ⚠️ Con deudas
-                        </label>
+                        <label class="radio-card"><input type="radio" name="hasDebt" value="no" checked> ✅ Sin deudas</label>
+                        <label class="radio-card"><input type="radio" name="hasDebt" value="si"> ⚠️ Con deudas</label>
                     </div>
-                    
-                    <div id="debtFields" style="display: none;">
-                        <div class="input-group">
-                            <i class="fas fa-credit-card"></i>
-                            <input type="number" id="profileDebtAmount" step="0.01" placeholder="Monto de deuda" value="0">
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-percent"></i>
-                            <input type="number" id="profileDebtInterest" step="0.1" placeholder="Interés anual %" value="0">
-                        </div>
+                    <div id="debtFields" style="display:none">
+                        <div class="input-group"><i class="fas fa-credit-card"></i><input type="number" id="profileDebtAmount" step="0.01" placeholder="Monto de deuda" value="0"></div>
+                        <div class="input-group"><i class="fas fa-percent"></i><input type="number" id="profileDebtInterest" step="0.1" placeholder="Interés anual %" value="0"></div>
                     </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-piggy-bank"></i>
-                        <input type="number" id="profileSavings" step="0.01" placeholder="Ahorros actuales" value="0">
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="profileEmail" placeholder="Correo para reportes">
-                    </div>
-                    
-                    <div class="toggle-switch">
-                        <span>📧 Recibir reportes por email</span>
-                        <label class="switch">
-                            <input type="checkbox" id="receiveEmailToggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-bullseye"></i>
-                        <select id="profileGoal">
-                            <option value="ahorro">Ahorrar para emergencias</option>
-                            <option value="casa">Comprar casa</option>
-                            <option value="auto">Comprar auto</option>
-                            <option value="viaje">Hacer un viaje</option>
-                            <option value="invertir">Invertir</option>
-                            <option value="libertad">Libertad financiera</option>
-                            <option value="deudas">Pagar deudas</option>
-                        </select>
-                    </div>
-                    
-                    <div class="input-group">
-                        <i class="fas fa-calendar-alt"></i>
-                        <select id="profileProjection">
-                            <option value="3">3 meses</option>
-                            <option value="6">6 meses</option>
-                            <option value="12" selected>12 meses</option>
-                            <option value="24">24 meses</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-check"></i> Guardar perfil
-                    </button>
+                    <div class="input-group"><i class="fas fa-piggy-bank"></i><input type="number" id="profileSavings" step="0.01" placeholder="Ahorros actuales" value="0"></div>
+                    <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="profileEmail" placeholder="Correo para reportes"></div>
+                    <div class="toggle-switch"><span>📧 Recibir reportes por email</span><label class="switch"><input type="checkbox" id="receiveEmailToggle" checked><span class="slider round"></span></label></div>
+                    <div class="input-group"><i class="fas fa-bullseye"></i><select id="profileGoal"><option value="ahorro">Ahorrar para emergencias</option><option value="casa">Comprar casa</option><option value="auto">Comprar auto</option><option value="viaje">Hacer un viaje</option><option value="invertir">Invertir</option><option value="libertad">Libertad financiera</option><option value="deudas">Pagar deudas</option></select></div>
+                    <div class="input-group"><i class="fas fa-calendar-alt"></i><select id="profileProjection"><option value="3">3 meses</option><option value="6">6 meses</option><option value="12" selected>12 meses</option><option value="24">24 meses</option></select></div>
+                    <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Guardar perfil</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAGO PROGRAMADO -->
+    <div id="calendarModal" class="modal" style="display:none">
+        <div class="modal-content glass">
+            <div class="modal-header"><div class="logo-icon-modal">📅</div><h2>Agregar Pago Programado</h2><p>Registra tus pagos recurrentes</p></div>
+            <div class="modal-body">
+                <form id="scheduledPaymentForm">
+                    <div class="input-group"><i class="fas fa-tag"></i><input type="text" id="paymentName" placeholder="Nombre del pago" required></div>
+                    <div class="input-group"><i class="fas fa-dollar-sign"></i><input type="number" id="paymentAmount" step="0.01" placeholder="Monto" required></div>
+                    <div class="input-group"><i class="fas fa-calendar-day"></i><input type="date" id="paymentDueDate" required></div>
+                    <div class="input-group"><i class="fas fa-chart-line"></i><select id="paymentRecurrence"><option value="once">Única vez</option><option value="monthly">Mensual</option><option value="yearly">Anual</option></select></div>
+                    <div class="input-group"><i class="fas fa-palette"></i><select id="paymentColor"><option value="#ef4444">🔴 Rojo</option><option value="#f59e0b">🟡 Naranja</option><option value="#10b981">🟢 Verde</option><option value="#3b82f6">🔵 Azul</option><option value="#8b5cf6">🟣 Morado</option></select></div>
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar pago</button>
                 </form>
             </div>
         </div>
     </div>
 
     <!-- APP PRINCIPAL -->
-    <div class="app-container" id="appContainer" style="display: none;">
+    <div class="app-container" id="appContainer" style="display:none">
         <div class="sidebar">
-            <div class="sidebar-brand">
-                <span class="brand-icon">💰</span>
-                <span class="brand-text">FinanceTracker</span>
-                <span class="brand-badge">AI</span>
-            </div>
+            <div class="sidebar-brand"><span class="brand-icon">💰</span><span class="brand-text">FinanceTracker</span><span class="brand-badge">AI</span></div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item" data-page="dashboard">
-                    <i class="fas fa-chart-line"></i><span>Dashboard</span>
-                </a>
-                <a href="#" class="nav-item" data-page="calendar">
-                    <i class="fas fa-calendar-alt"></i><span>Calendario de Pagos</span>
-                    <span id="pendingBadge" class="badge-pending" style="display: none;"></span>
-                </a>
-                <a href="#" class="nav-item" id="editProfileMenu">
-                    <i class="fas fa-user-cog"></i><span>Mi perfil</span>
-                </a>
+                <a href="#" class="nav-item active" data-page="dashboard"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="#" class="nav-item" data-page="calendar"><i class="fas fa-calendar-alt"></i><span>Calendario de Pagos</span><span id="pendingBadge" class="badge-pending" style="display:none"></span></a>
+                <a href="#" class="nav-item" id="editProfileMenu"><i class="fas fa-user-cog"></i><span>Mi perfil</span></a>
             </nav>
             <div class="sidebar-footer">
                 <button id="themeToggle" class="theme-btn"><i class="fas fa-moon"></i><span>Modo oscuro</span></button>
@@ -188,139 +98,61 @@
         </div>
 
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-text">
-                    <h2 id="welcomeName">Bienvenido</h2>
-                    <p id="welcomeDate"></p>
-                </div>
-                <div class="header-actions">
-                    <button id="syncBtn" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
-                    <button id="emailReportBtn" class="icon-btn"><i class="fas fa-envelope"></i></button>
-                    <button id="exportBtn" class="icon-btn"><i class="fas fa-download"></i></button>
-                    <select id="currencySelect" class="currency-badge">
-                        <option value="MXN">🇲🇽 MXN</option>
-                        <option value="USD">🇺🇸 USD</option>
-                        <option value="EUR">🇪🇺 EUR</option>
-                    </select>
-                </div>
-            </header>
-
-            <div class="profile-card glass">
-                <div class="profile-avatar"><i class="fas fa-user-circle"></i></div>
-                <div class="profile-details">
-                    <h4>Tu perfil financiero</h4>
-                    <p id="profileSummaryText">Cargando...</p>
-                </div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card income">
-                    <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
-                    <div class="stat-info">
-                        <h3>Ingresos</h3>
-                        <div class="stat-value" id="totalIncome">$0</div>
-                        <small>mensuales</small>
+            <!-- Página Dashboard -->
+            <div id="dashboardPage" class="page active">
+                <header class="top-bar">
+                    <div class="welcome-text"><h2 id="welcomeName">Bienvenido</h2><p id="welcomeDate"></p></div>
+                    <div class="header-actions">
+                        <button id="syncBtn" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
+                        <button id="emailReportBtn" class="icon-btn"><i class="fas fa-envelope"></i></button>
+                        <button id="exportBtn" class="icon-btn"><i class="fas fa-download"></i></button>
+                        <select id="currencySelect" class="currency-badge"><option value="MXN">🇲🇽 MXN</option><option value="USD">🇺🇸 USD</option><option value="EUR">🇪🇺 EUR</option></select>
                     </div>
-                </div>
-                <div class="stat-card expense">
-                    <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
-                    <div class="stat-info">
-                        <h3>Gastos</h3>
-                        <div class="stat-value" id="totalExpenses">$0</div>
-                        <small>mensuales</small>
-                    </div>
-                </div>
-                <div class="stat-card balance">
-                    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
-                    <div class="stat-info">
-                        <h3>Balance</h3>
-                        <div class="stat-value" id="balance">$0</div>
-                        <small>disponible</small>
-                    </div>
-                </div>
-            </div>
+                </header>
 
-            <div class="transaction-card glass">
-                <h3><i class="fas fa-plus-circle"></i> Nueva transacción</h3>
-                <form id="transactionForm">
-                    <div class="form-grid">
-                        <select id="typeSelect" required>
-                            <option value="ingreso">💰 Ingreso</option>
-                            <option value="gasto">💸 Gasto</option>
-                        </select>
-                        <input type="text" id="descriptionInput" placeholder="Descripción" required>
-                        <input type="number" id="amountInput" step="0.01" placeholder="Monto" required>
-                        <select id="categorySelect" required>
-                            <option value="Comida">🍔 Comida</option>
-                            <option value="Transporte">🚗 Transporte</option>
-                            <option value="Entretenimiento">🎬 Entretenimiento</option>
-                            <option value="Servicios">💡 Servicios</option>
-                            <option value="Salud">🏥 Salud</option>
-                            <option value="Educacion">📚 Educación</option>
-                            <option value="Otros">📦 Otros</option>
-                        </select>
-                        <input type="text" id="tagsInput" placeholder="#etiquetas">
-                        <input type="date" id="dateInput" required>
-                        <button type="submit" class="btn-submit"><i class="fas fa-check"></i> Agregar</button>
-                    </div>
-                </form>
-            </div>
+                <div class="profile-card glass"><div class="profile-avatar"><i class="fas fa-user-circle"></i></div><div class="profile-details"><h4>Tu perfil financiero</h4><p id="profileSummaryText">Cargando...</p></div></div>
 
-            <div class="ai-card glass">
-                <div class="ai-header">
-                    <div><h3><i class="fas fa-robot"></i> Asesor Financiero IA</h3><p>Experto con 10+ años</p></div>
-                    <button id="analyzeBtn" class="btn-ai"><i class="fas fa-brain"></i> Analizar</button>
+                <div class="stats-grid">
+                    <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-up"></i></div><div class="stat-info"><h3>Ingresos</h3><div class="stat-value" id="totalIncome">$0</div><small>mensuales</small></div></div>
+                    <div class="stat-card expense"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div><div class="stat-info"><h3>Gastos</h3><div class="stat-value" id="totalExpenses">$0</div><small>mensuales</small></div></div>
+                    <div class="stat-card balance"><div class="stat-icon"><i class="fas fa-wallet"></i></div><div class="stat-info"><h3>Balance</h3><div class="stat-value" id="balance">$0</div><small>disponible</small></div></div>
                 </div>
-                <div id="aiRecommendations" class="ai-recommendations"><p class="placeholder">🔍 Haz clic en "Analizar"</p></div>
-            </div>
 
-            <div class="transactions-card glass">
-                <h3><i class="fas fa-history"></i> Historial</h3>
-                <div class="transactions-list" id="transactionsList"><p class="empty-message">No hay transacciones</p></div>
-            </div>
-        </div>
-        <!-- MODAL DEL CALENDARIO -->
-        <div id="calendarModal" class="modal" style="display: none;">
-            <div class="modal-content glass">
-                <div class="modal-header">
-                    <div class="logo-icon-modal">📅</div>
-                    <h2>Agregar Pago Programado</h2>
-                    <p>Registra tus pagos recurrentes</p>
-                </div>
-                <div class="modal-body">
-                    <form id="scheduledPaymentForm">
-                        <div class="input-group">
-                            <i class="fas fa-tag"></i>
-                            <input type="text" id="paymentName" placeholder="Nombre del pago (Ej: Renta, Netflix)" required>
+                <div class="chart-card glass"><div class="chart-header"><h3><i class="fas fa-chart-line"></i> Evolución mensual</h3></div><div class="chart-container"><canvas id="trendChart" width="800" height="300"></canvas></div></div>
+                <div class="chart-card glass"><div class="chart-header"><h3><i class="fas fa-chart-pie"></i> Distribución de gastos</h3></div><div class="chart-container"><canvas id="expenseChart" width="400" height="400"></canvas></div></div>
+
+                <div class="transaction-card glass"><h3><i class="fas fa-plus-circle"></i> Nueva transacción</h3>
+                    <form id="transactionForm">
+                        <div class="form-grid">
+                            <select id="typeSelect" required><option value="ingreso">💰 Ingreso</option><option value="gasto">💸 Gasto</option></select>
+                            <input type="text" id="descriptionInput" placeholder="Descripción" required>
+                            <input type="number" id="amountInput" step="0.01" placeholder="Monto" required>
+                            <select id="categorySelect" required><option value="Comida">🍔 Comida</option><option value="Transporte">🚗 Transporte</option><option value="Entretenimiento">🎬 Entretenimiento</option><option value="Servicios">💡 Servicios</option><option value="Salud">🏥 Salud</option><option value="Educacion">📚 Educación</option><option value="Otros">📦 Otros</option></select>
+                            <input type="text" id="tagsInput" placeholder="#etiquetas">
+                            <input type="date" id="dateInput" required>
+                            <button type="submit" class="btn-submit"><i class="fas fa-check"></i> Agregar</button>
                         </div>
-                        <div class="input-group">
-                            <i class="fas fa-dollar-sign"></i>
-                            <input type="number" id="paymentAmount" step="0.01" placeholder="Monto" required>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-calendar-day"></i>
-                            <input type="date" id="paymentDueDate" required>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-chart-line"></i>
-                            <select id="paymentRecurrence">
-                                <option value="once">Única vez</option>
-                                <option value="monthly">Mensual</option>
-                                <option value="yearly">Anual</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-palette"></i>
-                            <select id="paymentColor">
-                                <option value="#ef4444">🔴 Rojo</option>
-                                <option value="#f59e0b">🟡 Naranja</option>
-                                <option value="#10b981">🟢 Verde</option>
-                                <option value="#3b82f6">🔵 Azul</option>
-                                <option value="#8b5cf6">🟣 Morado</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar pago</button>
                     </form>
+                </div>
+
+                <div class="ai-card glass"><div class="ai-header"><div><h3><i class="fas fa-robot"></i> Asesor Financiero IA</h3><p>Experto con 10+ años</p></div><button id="analyzeBtn" class="btn-ai"><i class="fas fa-brain"></i> Analizar</button></div><div id="aiRecommendations" class="ai-recommendations"><p class="placeholder">🔍 Haz clic en "Analizar"</p></div></div>
+
+                <div class="transactions-card glass"><h3><i class="fas fa-history"></i> Historial</h3><div class="transactions-list" id="transactionsList"><p class="empty-message">No hay transacciones</p></div></div>
+            </div>
+
+            <!-- Página Calendario -->
+            <div id="calendarPage" class="page" style="display:none">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-title"><i class="fas fa-calendar-alt" style="font-size:28px;color:var(--primary)"></i><h2 id="currentMonthYear"></h2></div>
+                        <div class="calendar-nav">
+                            <button onclick="prevMonth()"><i class="fas fa-chevron-left"></i> Anterior</button>
+                            <button onclick="goToToday()">Hoy</button>
+                            <button onclick="nextMonth()">Siguiente <i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                    <div class="payments-list"><h3><i class="fas fa-list"></i> Lista de pagos</h3><div id="paymentsListContainer"></div></div>
                 </div>
             </div>
         </div>
