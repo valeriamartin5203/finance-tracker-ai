@@ -170,8 +170,16 @@
                 <span class="brand-badge">AI</span>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
-                <a href="#" class="nav-item" id="editProfileMenu"><i class="fas fa-user-cog"></i><span>Mi perfil</span></a>
+                <a href="#" class="nav-item" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i><span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="calendar">
+                    <i class="fas fa-calendar-alt"></i><span>Calendario de Pagos</span>
+                    <span id="pendingBadge" class="badge-pending" style="display: none;"></span>
+                </a>
+                <a href="#" class="nav-item" id="editProfileMenu">
+                    <i class="fas fa-user-cog"></i><span>Mi perfil</span>
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <button id="themeToggle" class="theme-btn"><i class="fas fa-moon"></i><span>Modo oscuro</span></button>
@@ -269,6 +277,51 @@
             <div class="transactions-card glass">
                 <h3><i class="fas fa-history"></i> Historial</h3>
                 <div class="transactions-list" id="transactionsList"><p class="empty-message">No hay transacciones</p></div>
+            </div>
+        </div>
+        <!-- MODAL DEL CALENDARIO -->
+        <div id="calendarModal" class="modal" style="display: none;">
+            <div class="modal-content glass">
+                <div class="modal-header">
+                    <div class="logo-icon-modal">📅</div>
+                    <h2>Agregar Pago Programado</h2>
+                    <p>Registra tus pagos recurrentes</p>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduledPaymentForm">
+                        <div class="input-group">
+                            <i class="fas fa-tag"></i>
+                            <input type="text" id="paymentName" placeholder="Nombre del pago (Ej: Renta, Netflix)" required>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-dollar-sign"></i>
+                            <input type="number" id="paymentAmount" step="0.01" placeholder="Monto" required>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-calendar-day"></i>
+                            <input type="date" id="paymentDueDate" required>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-chart-line"></i>
+                            <select id="paymentRecurrence">
+                                <option value="once">Única vez</option>
+                                <option value="monthly">Mensual</option>
+                                <option value="yearly">Anual</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-palette"></i>
+                            <select id="paymentColor">
+                                <option value="#ef4444">🔴 Rojo</option>
+                                <option value="#f59e0b">🟡 Naranja</option>
+                                <option value="#10b981">🟢 Verde</option>
+                                <option value="#3b82f6">🔵 Azul</option>
+                                <option value="#8b5cf6">🟣 Morado</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Guardar pago</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

@@ -313,6 +313,64 @@ function generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRat
 app.get('/api/rates', (req, res) => {
     res.json({ rates: { USD: 1, EUR: 0.92, MXN: 17.50, COP: 4000, ARS: 850, GBP: 0.79 } });
 });
+// ============ ARCHIVO PARA PAGOS PROGRAMADOS ============
+const SCHEDULED_PAYMENTS_FILE = path.join(DATA_DIR, 'scheduled_payments.json');
+
+if (!fs.existsSync(SCHEDULED_PAYMENTS_FILE)) {
+    fs.writeFileSync(SCHEDULED_PAYMENTS_FILE, JSON.stringify({}, null, 2));
+}
+
+// Obtener pagos programados del usuario
+app.get('/api/scheduled-payments', authenticateToken, (req, res) => {
+    const payments = readJSON(SCHEDULED_PAYMENTS_FILE);
+    const userPayments = payments[req.user.id] || [];
+    res.json({ payments: userPayments });
+});
+
+// Agregar pago programado
+app.post('/api/scheduled-payments', authenticateToken, (req, res) => {
+    const payments = readJSON(SCHEDULED_PAYMENTS_FILE);
+    if (!payments[req.user.id]) payments[req.user.id] = [];
+    
+    const newPayment = {
+        _id: Date.now().toString(),
+        ...req.body,
+        paid: false,
+        createdAt: new Date().toISOString()
+    };
+    payments[req.user.id].push(newPayment);
+    writeJSON(SCHEDULED_PAYMENTS_FILE, payments);
+    res.json({ success: true, payment: newPayment });
+});
+
+// Actualizar pago (marcar como pagado)
+app.put('/api/scheduled-payments/:id', authenticateToken, (req, res) => {
+    const payments = readJSON(SCHEDULED_PAYMENTS_FILE);
+    if (payments[req.user.id]) {
+        const index = payments[req.user.id].findIndex(p => p._id === req.params.id);
+        if (index !== -1) {
+            payments[req.user.id][index] = { ...payments[req.user.id][index], ...req.body };
+            writeJSON(SCHEDULED_PAYMENTS_FILE, payments);
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Pago no encontrado' });
+        }
+    } else {
+        res.status(404).json({ error: 'No hay pagos' });
+    }
+});
+
+// Eliminar pago programado
+app.delete('/api/scheduled-payments/:id', authenticateToken, (req, res) => {
+    const payments = readJSON(SCHEDULED_PAYMENTS_FILE);
+    if (payments[req.user.id]) {
+        payments[req.user.id] = payments[req.user.id].filter(p => p._id !== req.params.id);
+        writeJSON(SCHEDULED_PAYMENTS_FILE, payments);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Pago no encontrado' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor en http://localhost:${PORT}`);
