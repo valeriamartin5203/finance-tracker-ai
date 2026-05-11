@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceTracker AI | Asesor Financiero Inteligente</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <title>FinanceTracker AI | Asesor Financiero</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- MODAL DE LOGIN -->
+    <!-- MODAL DE LOGIN/REGISTRO (PRIMERO) -->
     <div id="authModal" class="modal">
         <div class="modal-content glass">
             <div class="modal-header">
@@ -47,13 +45,13 @@
         </div>
     </div>
 
-    <!-- MODAL DE PERFIL -->
-    <div id="profileModal" class="modal">
+    <!-- MODAL DE PERFIL (SEGUNDO - DESPUÉS DE REGISTRARSE) -->
+    <div id="profileModal" class="modal" style="display: none;">
         <div class="modal-content glass">
             <div class="modal-header">
                 <div class="logo-icon-modal">📊</div>
-                <h2>Configura tu perfil</h2>
-                <p>Completa tus datos financieros</p>
+                <h2>Completa tu perfil</h2>
+                <p>Cuéntanos sobre tus finanzas</p>
             </div>
             <div class="modal-body">
                 <form id="profileForm">
@@ -64,16 +62,13 @@
                     
                     <div class="radio-group">
                         <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="semanal">
-                            <span>📆 Semanal</span>
+                            <input type="radio" name="incomeFrequency" value="semanal"> 📆 Semanal
                         </label>
                         <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="quincenal">
-                            <span>📅 Quincenal</span>
+                            <input type="radio" name="incomeFrequency" value="quincenal"> 📅 Quincenal
                         </label>
                         <label class="radio-card">
-                            <input type="radio" name="incomeFrequency" value="mensual" checked>
-                            <span>📆 Mensual</span>
+                            <input type="radio" name="incomeFrequency" value="mensual" checked> 📆 Mensual
                         </label>
                     </div>
                     
@@ -99,12 +94,10 @@
                     
                     <div class="radio-group">
                         <label class="radio-card">
-                            <input type="radio" name="hasDebt" value="no" checked>
-                            <span>✅ Sin deudas</span>
+                            <input type="radio" name="hasDebt" value="no" checked> ✅ Sin deudas
                         </label>
                         <label class="radio-card">
-                            <input type="radio" name="hasDebt" value="si">
-                            <span>⚠️ Con deudas</span>
+                            <input type="radio" name="hasDebt" value="si"> ⚠️ Con deudas
                         </label>
                     </div>
                     
@@ -170,89 +163,51 @@
 
     <!-- APP PRINCIPAL -->
     <div class="app-container" id="appContainer" style="display: none;">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-brand">
                 <span class="brand-icon">💰</span>
                 <span class="brand-text">FinanceTracker</span>
                 <span class="brand-badge">AI</span>
             </div>
-            
             <nav class="sidebar-nav">
-                <a href="#dashboard" class="nav-item active">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#transactions" class="nav-item">
-                    <i class="fas fa-list"></i>
-                    <span>Transacciones</span>
-                </a>
-                <a href="#analytics" class="nav-item">
-                    <i class="fas fa-robot"></i>
-                    <span>Asesor IA</span>
-                </a>
-                <a href="#profile" class="nav-item" id="editProfileMenu">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Mi perfil</span>
-                </a>
+                <a href="#" class="nav-item active"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="#" class="nav-item" id="editProfileMenu"><i class="fas fa-user-cog"></i><span>Mi perfil</span></a>
             </nav>
-            
             <div class="sidebar-footer">
-                <button id="themeToggle" class="theme-btn">
-                    <i class="fas fa-moon"></i>
-                    <span>Modo oscuro</span>
-                </button>
-                <button id="logoutBtn" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Cerrar sesión</span>
-                </button>
+                <button id="themeToggle" class="theme-btn"><i class="fas fa-moon"></i><span>Modo oscuro</span></button>
+                <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>Cerrar sesión</span></button>
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
             <header class="top-bar">
                 <div class="welcome-text">
-                    <h2 id="welcomeName">Bienvenido de vuelta</h2>
+                    <h2 id="welcomeName">Bienvenido</h2>
                     <p id="welcomeDate"></p>
                 </div>
                 <div class="header-actions">
-                    <button id="syncBtn" class="icon-btn" title="Sincronizar">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button id="emailReportBtn" class="icon-btn" title="Enviar reporte">
-                        <i class="fas fa-envelope"></i>
-                    </button>
-                    <button id="exportBtn" class="icon-btn" title="Exportar CSV">
-                        <i class="fas fa-download"></i>
-                    </button>
+                    <button id="syncBtn" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
+                    <button id="emailReportBtn" class="icon-btn"><i class="fas fa-envelope"></i></button>
+                    <button id="exportBtn" class="icon-btn"><i class="fas fa-download"></i></button>
                     <select id="currencySelect" class="currency-badge">
                         <option value="MXN">🇲🇽 MXN</option>
                         <option value="USD">🇺🇸 USD</option>
                         <option value="EUR">🇪🇺 EUR</option>
-                        <option value="COP">🇨🇴 COP</option>
-                        <option value="ARS">🇦🇷 ARS</option>
                     </select>
                 </div>
             </header>
 
-            <!-- Profile Summary Card -->
             <div class="profile-card glass">
-                <div class="profile-avatar">
-                    <i class="fas fa-user-circle"></i>
-                </div>
+                <div class="profile-avatar"><i class="fas fa-user-circle"></i></div>
                 <div class="profile-details">
                     <h4>Tu perfil financiero</h4>
                     <p id="profileSummaryText">Cargando...</p>
                 </div>
             </div>
 
-            <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card income">
-                    <div class="stat-icon">
-                        <i class="fas fa-arrow-up"></i>
-                    </div>
+                    <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
                     <div class="stat-info">
                         <h3>Ingresos</h3>
                         <div class="stat-value" id="totalIncome">$0</div>
@@ -260,9 +215,7 @@
                     </div>
                 </div>
                 <div class="stat-card expense">
-                    <div class="stat-icon">
-                        <i class="fas fa-arrow-down"></i>
-                    </div>
+                    <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
                     <div class="stat-info">
                         <h3>Gastos</h3>
                         <div class="stat-value" id="totalExpenses">$0</div>
@@ -270,9 +223,7 @@
                     </div>
                 </div>
                 <div class="stat-card balance">
-                    <div class="stat-icon">
-                        <i class="fas fa-wallet"></i>
-                    </div>
+                    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
                     <div class="stat-info">
                         <h3>Balance</h3>
                         <div class="stat-value" id="balance">$0</div>
@@ -281,132 +232,43 @@
                 </div>
             </div>
 
-            <!-- Charts Row -->
-            <div class="charts-row">
-                <div class="chart-card glass">
-                    <div class="chart-header">
-                        <h3><i class="fas fa-chart-line"></i> Evolución mensual</h3>
-                        <i class="fas fa-info-circle info-icon"></i>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card glass">
-                    <div class="chart-header">
-                        <h3><i class="fas fa-chart-pie"></i> Distribución</h3>
-                        <i class="fas fa-info-circle info-icon"></i>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="expenseChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="filters-bar glass">
-                <div class="filter-group">
-                    <i class="fas fa-calendar"></i>
-                    <select id="monthFilter" class="filter-select">
-                        <option value="all">Todos los meses</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <i class="fas fa-tag"></i>
-                    <input type="text" id="tagFilter" placeholder="Filtrar por etiqueta #ejemplo">
-                </div>
-                <button id="clearFiltersBtn" class="clear-btn">
-                    <i class="fas fa-times"></i> Limpiar
-                </button>
-            </div>
-
-            <!-- Add Transaction Card -->
             <div class="transaction-card glass">
                 <h3><i class="fas fa-plus-circle"></i> Nueva transacción</h3>
                 <form id="transactionForm">
                     <div class="form-grid">
-                        <div class="input-group">
-                            <i class="fas fa-tag"></i>
-                            <select id="typeSelect" required>
-                                <option value="ingreso">💰 Ingreso</option>
-                                <option value="gasto">💸 Gasto</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-pen"></i>
-                            <input type="text" id="descriptionInput" placeholder="Descripción" required>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-dollar-sign"></i>
-                            <input type="number" id="amountInput" step="0.01" placeholder="Monto" required>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-folder"></i>
-                            <select id="categorySelect" required>
-                                <option value="Comida">🍔 Comida</option>
-                                <option value="Transporte">🚗 Transporte</option>
-                                <option value="Entretenimiento">🎬 Entretenimiento</option>
-                                <option value="Servicios">💡 Servicios</option>
-                                <option value="Salud">🏥 Salud</option>
-                                <option value="Educacion">📚 Educación</option>
-                                <option value="Otros">📦 Otros</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-hashtag"></i>
-                            <input type="text" id="tagsInput" placeholder="#urgente #ocio">
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-calendar-day"></i>
-                            <input type="date" id="dateInput" required>
-                        </div>
-                        <button type="submit" class="btn-submit">
-                            <i class="fas fa-check"></i> Agregar
-                        </button>
+                        <select id="typeSelect" required>
+                            <option value="ingreso">💰 Ingreso</option>
+                            <option value="gasto">💸 Gasto</option>
+                        </select>
+                        <input type="text" id="descriptionInput" placeholder="Descripción" required>
+                        <input type="number" id="amountInput" step="0.01" placeholder="Monto" required>
+                        <select id="categorySelect" required>
+                            <option value="Comida">🍔 Comida</option>
+                            <option value="Transporte">🚗 Transporte</option>
+                            <option value="Entretenimiento">🎬 Entretenimiento</option>
+                            <option value="Servicios">💡 Servicios</option>
+                            <option value="Salud">🏥 Salud</option>
+                            <option value="Educacion">📚 Educación</option>
+                            <option value="Otros">📦 Otros</option>
+                        </select>
+                        <input type="text" id="tagsInput" placeholder="#etiquetas">
+                        <input type="date" id="dateInput" required>
+                        <button type="submit" class="btn-submit"><i class="fas fa-check"></i> Agregar</button>
                     </div>
                 </form>
             </div>
 
-            <!-- Reminders Section -->
-            <div class="reminders-card glass">
-                <h3><i class="fas fa-bell"></i> Recordatorios</h3>
-                <div id="remindersList" class="reminders-list">
-                    <p class="empty-message">No hay recordatorios</p>
-                </div>
-                <form id="reminderForm" class="reminder-form">
-                    <div class="form-inline">
-                        <input type="text" id="reminderName" placeholder="Ej: Renta">
-                        <input type="number" id="reminderAmount" step="0.01" placeholder="Monto">
-                        <input type="date" id="reminderDate">
-                        <button type="submit" class="btn-secondary">
-                            <i class="fas fa-plus"></i> Agregar
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- AI Analysis Section -->
             <div class="ai-card glass">
                 <div class="ai-header">
-                    <div>
-                        <h3><i class="fas fa-robot"></i> Asesor Financiero IA</h3>
-                        <p>Experto con 10+ años de experiencia simulada</p>
-                    </div>
-                    <button id="analyzeBtn" class="btn-ai">
-                        <i class="fas fa-brain"></i> Analizar
-                    </button>
+                    <div><h3><i class="fas fa-robot"></i> Asesor Financiero IA</h3><p>Experto con 10+ años</p></div>
+                    <button id="analyzeBtn" class="btn-ai"><i class="fas fa-brain"></i> Analizar</button>
                 </div>
-                <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">🔍 Haz clic en "Analizar" para tu diagnóstico personalizado</p>
-                </div>
+                <div id="aiRecommendations" class="ai-recommendations"><p class="placeholder">🔍 Haz clic en "Analizar"</p></div>
             </div>
 
-            <!-- Transactions List -->
             <div class="transactions-card glass">
-                <h3><i class="fas fa-history"></i> Historial de transacciones</h3>
-                <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">No hay transacciones registradas</p>
-                </div>
+                <h3><i class="fas fa-history"></i> Historial</h3>
+                <div class="transactions-list" id="transactionsList"><p class="empty-message">No hay transacciones</p></div>
             </div>
         </div>
     </div>
