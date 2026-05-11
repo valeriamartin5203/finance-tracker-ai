@@ -3,221 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceTracker AI | Asesor Experto</title>
+    <title>FinanceTracker AI | Asesor Financiero Inteligente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- MODAL DE LOGIN/REGISTRO -->
+    <!-- MODAL DE LOGIN -->
     <div id="authModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content glass">
             <div class="modal-header">
-                <span class="modal-icon">🔐</span>
-                <h2 id="authTitle">Iniciar Sesión</h2>
+                <div class="logo-icon-modal">💰</div>
+                <h2>FinanceTracker AI</h2>
+                <p>Tu asesor financiero personal</p>
             </div>
             <div class="modal-body">
                 <form id="authForm">
-                    <div class="form-group">
-                        <label>📧 Correo electrónico</label>
-                        <input type="email" id="authEmail" required>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="authEmail" placeholder="correo@ejemplo.com" required>
                     </div>
-                    <div class="form-group">
-                        <label>🔒 Contraseña</label>
-                        <input type="password" id="authPassword" required>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="authPassword" placeholder="Contraseña" required>
                     </div>
-                    <div id="authNameGroup" class="form-group" style="display: none;">
-                        <label>👤 Nombre</label>
-                        <input type="text" id="authName">
+                    <div id="authNameGroup" style="display: none;">
+                        <div class="input-group">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="authName" placeholder="Tu nombre">
+                        </div>
                     </div>
-                    <button type="submit" class="btn-primary" id="authSubmitBtn">Ingresar</button>
+                    <button type="submit" class="btn-primary" id="authSubmitBtn">
+                        <i class="fas fa-arrow-right"></i> Ingresar
+                    </button>
                 </form>
-                <p style="text-align: center; margin-top: 15px;">
+                <p class="auth-toggle">
                     <a href="#" id="toggleAuthMode">¿No tienes cuenta? Regístrate</a>
                 </p>
             </div>
         </div>
+    </div>
 
-
-        <!-- Dentro del modal-body, después de los otros campos -->
-        <div class="form-group">
-            <label>📧 Correo electrónico (para reportes semanales)</label>
-            <input type="email" id="profileEmail" placeholder="tu@correo.com" value="">
-            <small>📨 Recibirás reportes financieros semanales en este correo</small>
-        </div>
-
-        <div class="form-group">
-            <label>📬 Recibir reportes por email</label>
-            <div class="radio-group">
-                <label class="radio-option">
-                    <input type="radio" name="receiveEmail" value="si" checked> ✅ Sí, enviar reportes
-                </label>
-                <label class="radio-option">
-                    <input type="radio" name="receiveEmail" value="no"> ❌ No enviar reportes
-                </label>
+    <!-- MODAL DE PERFIL -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <div class="logo-icon-modal">📊</div>
+                <h2>Configura tu perfil</h2>
+                <p>Completa tus datos financieros</p>
+            </div>
+            <div class="modal-body">
+                <form id="profileForm">
+                    <div class="input-group">
+                        <i class="fas fa-dollar-sign"></i>
+                        <input type="number" id="profileIncome" step="0.01" placeholder="Ingreso mensual" required>
+                    </div>
+                    
+                    <div class="radio-group">
+                        <label class="radio-card">
+                            <input type="radio" name="incomeFrequency" value="semanal">
+                            <span>📆 Semanal</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="incomeFrequency" value="quincenal">
+                            <span>📅 Quincenal</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="incomeFrequency" value="mensual" checked>
+                            <span>📆 Mensual</span>
+                        </label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-home"></i>
+                        <input type="number" id="profileRent" step="0.01" placeholder="Renta/hipoteca" value="0">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-bolt"></i>
+                        <input type="number" id="profileServices" step="0.01" placeholder="Servicios" value="0">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-shopping-cart"></i>
+                        <input type="number" id="profileGroceries" step="0.01" placeholder="Supermercado" value="0">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-car"></i>
+                        <input type="number" id="profileTransport" step="0.01" placeholder="Transporte" value="0">
+                    </div>
+                    
+                    <div class="radio-group">
+                        <label class="radio-card">
+                            <input type="radio" name="hasDebt" value="no" checked>
+                            <span>✅ Sin deudas</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="hasDebt" value="si">
+                            <span>⚠️ Con deudas</span>
+                        </label>
+                    </div>
+                    
+                    <div id="debtFields" style="display: none;">
+                        <div class="input-group">
+                            <i class="fas fa-credit-card"></i>
+                            <input type="number" id="profileDebtAmount" step="0.01" placeholder="Monto de deuda" value="0">
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-percent"></i>
+                            <input type="number" id="profileDebtInterest" step="0.1" placeholder="Interés anual %" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-piggy-bank"></i>
+                        <input type="number" id="profileSavings" step="0.01" placeholder="Ahorros actuales" value="0">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="profileEmail" placeholder="Correo para reportes">
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <span>📧 Recibir reportes por email</span>
+                        <label class="switch">
+                            <input type="checkbox" id="receiveEmailToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-bullseye"></i>
+                        <select id="profileGoal">
+                            <option value="ahorro">Ahorrar para emergencias</option>
+                            <option value="casa">Comprar casa</option>
+                            <option value="auto">Comprar auto</option>
+                            <option value="viaje">Hacer un viaje</option>
+                            <option value="invertir">Invertir</option>
+                            <option value="libertad">Libertad financiera</option>
+                            <option value="deudas">Pagar deudas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="profileProjection">
+                            <option value="3">3 meses</option>
+                            <option value="6">6 meses</option>
+                            <option value="12" selected>12 meses</option>
+                            <option value="24">24 meses</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-check"></i> Guardar perfil
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 
     <!-- APP PRINCIPAL -->
     <div class="app-container" id="appContainer" style="display: none;">
-        <header>
-            <div class="logo">
-                <span class="logo-icon">💰</span>
-                <h1>FinanceTracker AI</h1>
-                <span class="badge-experto">Asesor Experto 10+ años</span>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon">💰</span>
+                <span class="brand-text">FinanceTracker</span>
+                <span class="brand-badge">AI</span>
             </div>
-            <div class="controls">
-                <button id="syncBtn" class="btn-edit-profile">🔄 Sincronizar</button>
-                <button id="emailReportBtn" class="btn-edit-profile">📧 Reporte semanal</button>
-                <button id="exportBtn" class="btn-edit-profile">📥 Exportar CSV</button>
-                <button id="logoutBtn" class="btn-edit-profile">🚪 Cerrar sesión</button>
-                <select id="currencySelect" class="currency-select">
-                    <option value="MXN" selected>MX$ MXN</option>
-                    <option value="USD">USD $</option>
-                    <option value="EUR">€ EUR</option>
-                </select>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#transactions" class="nav-item">
+                    <i class="fas fa-list"></i>
+                    <span>Transacciones</span>
+                </a>
+                <a href="#analytics" class="nav-item">
+                    <i class="fas fa-robot"></i>
+                    <span>Asesor IA</span>
+                </a>
+                <a href="#profile" class="nav-item" id="editProfileMenu">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Mi perfil</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="themeToggle" class="theme-btn">
+                    <i class="fas fa-moon"></i>
+                    <span>Modo oscuro</span>
+                </button>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar sesión</span>
+                </button>
             </div>
-        </header>
+        </div>
 
-        <div class="dashboard">
-            <!-- Resumen perfil -->
-            <div class="profile-summary-card">
-                <div class="profile-summary-content">
-                    <span class="profile-emoji">👤</span>
-                    <div class="profile-info">
-                        <strong>Tu perfil financiero</strong>
-                        <span id="profileSummaryText">Cargando...</span>
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <div class="welcome-text">
+                    <h2 id="welcomeName">Bienvenido de vuelta</h2>
+                    <p id="welcomeDate"></p>
+                </div>
+                <div class="header-actions">
+                    <button id="syncBtn" class="icon-btn" title="Sincronizar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button id="emailReportBtn" class="icon-btn" title="Enviar reporte">
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                    <button id="exportBtn" class="icon-btn" title="Exportar CSV">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <select id="currencySelect" class="currency-badge">
+                        <option value="MXN">🇲🇽 MXN</option>
+                        <option value="USD">🇺🇸 USD</option>
+                        <option value="EUR">🇪🇺 EUR</option>
+                        <option value="COP">🇨🇴 COP</option>
+                        <option value="ARS">🇦🇷 ARS</option>
+                    </select>
+                </div>
+            </header>
+
+            <!-- Profile Summary Card -->
+            <div class="profile-card glass">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="profile-details">
+                    <h4>Tu perfil financiero</h4>
+                    <p id="profileSummaryText">Cargando...</p>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card income">
+                    <div class="stat-icon">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Ingresos</h3>
+                        <div class="stat-value" id="totalIncome">$0</div>
+                        <small>mensuales</small>
+                    </div>
+                </div>
+                <div class="stat-card expense">
+                    <div class="stat-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Gastos</h3>
+                        <div class="stat-value" id="totalExpenses">$0</div>
+                        <small>mensuales</small>
+                    </div>
+                </div>
+                <div class="stat-card balance">
+                    <div class="stat-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Balance</h3>
+                        <div class="stat-value" id="balance">$0</div>
+                        <small>disponible</small>
                     </div>
                 </div>
             </div>
 
-            <!-- Filtros -->
-            <div class="filters-section">
-                <select id="monthFilter" class="filter-select">
-                    <option value="all">📅 Todos los meses</option>
-                </select>
-                <input type="text" id="tagFilter" class="filter-input" placeholder="🏷️ Filtrar por etiqueta">
-                <button id="clearFiltersBtn" class="btn-secondary">Limpiar filtros</button>
-            </div>
-
-            <!-- Tarjetas de resumen -->
-            <div class="summary-cards">
-                <div class="card income-card">
-                    <h3>💰 Ingresos Mensuales</h3>
-                    <div class="amount" id="totalIncome">$0</div>
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card glass">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-line"></i> Evolución mensual</h3>
+                        <i class="fas fa-info-circle info-icon"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
                 </div>
-                <div class="card expense-card">
-                    <h3>💸 Gastos Mensuales</h3>
-                    <div class="amount" id="totalExpenses">$0</div>
-                </div>
-                <div class="card balance-card">
-                    <h3>⚖️ Balance Mensual</h3>
-                    <div class="amount" id="balance">$0</div>
+                <div class="chart-card glass">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-pie"></i> Distribución</h3>
+                        <i class="fas fa-info-circle info-icon"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <!-- Gráfica de evolución mensual (NUEVO) -->
-            <div class="chart-section">
-                <h2>📈 Evolución Mensual</h2>
-                <div class="chart-container">
-                    <canvas id="trendChart" width="800" height="300"></canvas>
+            <!-- Filters -->
+            <div class="filters-bar glass">
+                <div class="filter-group">
+                    <i class="fas fa-calendar"></i>
+                    <select id="monthFilter" class="filter-select">
+                        <option value="all">Todos los meses</option>
+                    </select>
                 </div>
+                <div class="filter-group">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" id="tagFilter" placeholder="Filtrar por etiqueta #ejemplo">
+                </div>
+                <button id="clearFiltersBtn" class="clear-btn">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
             </div>
 
-            <!-- Gráfica de distribución -->
-            <div class="chart-section">
-                <h2>📊 Distribución de Gastos</h2>
-                <div class="chart-container">
-                    <canvas id="expenseChart" width="400" height="400"></canvas>
-                </div>
-            </div>
-
-            <!-- Formulario de transacción -->
-            <div class="transaction-form">
-                <h2>📝 Registrar Transacción</h2>
+            <!-- Add Transaction Card -->
+            <div class="transaction-card glass">
+                <h3><i class="fas fa-plus-circle"></i> Nueva transacción</h3>
                 <form id="transactionForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Tipo</label>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <i class="fas fa-tag"></i>
                             <select id="typeSelect" required>
                                 <option value="ingreso">💰 Ingreso</option>
                                 <option value="gasto">💸 Gasto</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Descripción</label>
-                            <input type="text" id="descriptionInput" placeholder="Ej: Supermercado" required>
+                        <div class="input-group">
+                            <i class="fas fa-pen"></i>
+                            <input type="text" id="descriptionInput" placeholder="Descripción" required>
                         </div>
-                        <div class="form-group">
-                            <label>Monto</label>
-                            <input type="number" id="amountInput" step="0.01" placeholder="0.00" required>
+                        <div class="input-group">
+                            <i class="fas fa-dollar-sign"></i>
+                            <input type="number" id="amountInput" step="0.01" placeholder="Monto" required>
                         </div>
-                        <div class="form-group">
-                            <label>Categoría</label>
+                        <div class="input-group">
+                            <i class="fas fa-folder"></i>
                             <select id="categorySelect" required>
                                 <option value="Comida">🍔 Comida</option>
                                 <option value="Transporte">🚗 Transporte</option>
                                 <option value="Entretenimiento">🎬 Entretenimiento</option>
                                 <option value="Servicios">💡 Servicios</option>
                                 <option value="Salud">🏥 Salud</option>
-                                <option value="Educacion">📚 Educacion</option>
+                                <option value="Educacion">📚 Educación</option>
                                 <option value="Otros">📦 Otros</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Etiquetas</label>
-                            <input type="text" id="tagsInput" placeholder="#urgente #ocio (separar con espacios)">
+                        <div class="input-group">
+                            <i class="fas fa-hashtag"></i>
+                            <input type="text" id="tagsInput" placeholder="#urgente #ocio">
                         </div>
-                        <div class="form-group">
-                            <label>Fecha</label>
+                        <div class="input-group">
+                            <i class="fas fa-calendar-day"></i>
                             <input type="date" id="dateInput" required>
                         </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-check"></i> Agregar
+                        </button>
                     </div>
-                    <button type="submit" class="btn-primary">➕ Agregar Transacción</button>
                 </form>
             </div>
 
-            <!-- Sección de Recordatorios (NUEVO) -->
-            <div class="reminders-section">
-                <h2>⏰ Recordatorios de Pagos</h2>
+            <!-- Reminders Section -->
+            <div class="reminders-card glass">
+                <h3><i class="fas fa-bell"></i> Recordatorios</h3>
                 <div id="remindersList" class="reminders-list">
                     <p class="empty-message">No hay recordatorios</p>
                 </div>
                 <form id="reminderForm" class="reminder-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <input type="text" id="reminderName" placeholder="Nombre (ej: Renta)" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="number" id="reminderAmount" step="0.01" placeholder="Monto" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="date" id="reminderDate" required>
-                        </div>
-                        <button type="submit" class="btn-secondary">➕ Agregar recordatorio</button>
+                    <div class="form-inline">
+                        <input type="text" id="reminderName" placeholder="Ej: Renta">
+                        <input type="number" id="reminderAmount" step="0.01" placeholder="Monto">
+                        <input type="date" id="reminderDate">
+                        <button type="submit" class="btn-secondary">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Análisis IA -->
-            <div class="ai-section">
+            <!-- AI Analysis Section -->
+            <div class="ai-card glass">
                 <div class="ai-header">
                     <div>
-                        <h2>🤖 Asesor Financiero IA</h2>
-                        <p class="ai-subtitle">Experto con 10+ años de experiencia</p>
+                        <h3><i class="fas fa-robot"></i> Asesor Financiero IA</h3>
+                        <p>Experto con 10+ años de experiencia simulada</p>
                     </div>
-                    <button id="analyzeBtn" class="btn-ai">✨ Analizar</button>
+                    <button id="analyzeBtn" class="btn-ai">
+                        <i class="fas fa-brain"></i> Analizar
+                    </button>
                 </div>
                 <div id="aiRecommendations" class="ai-recommendations">
-                    <p class="placeholder">📊 Haz clic en "Analizar" para tu diagnóstico</p>
+                    <p class="placeholder">🔍 Haz clic en "Analizar" para tu diagnóstico personalizado</p>
                 </div>
             </div>
 
-            <!-- Historial -->
-            <div class="transactions-section">
-                <h2>📋 Historial</h2>
+            <!-- Transactions List -->
+            <div class="transactions-card glass">
+                <h3><i class="fas fa-history"></i> Historial de transacciones</h3>
                 <div class="transactions-list" id="transactionsList">
-                    <p class="empty-message">No hay transacciones</p>
+                    <p class="empty-message">No hay transacciones registradas</p>
                 </div>
             </div>
         </div>

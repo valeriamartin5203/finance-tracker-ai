@@ -622,5 +622,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// ============ TEMA OSCURO/CLARO ============
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+// Inicializar tema
+initTheme();
+
+// Evento del tema
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+// Radio cards styling
+document.querySelectorAll('.radio-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const radio = this.querySelector('input');
+        radio.checked = true;
+        
+        // Remover selected de todos
+        this.parentElement.querySelectorAll('.radio-card').forEach(c => {
+            c.classList.remove('selected');
+        });
+        this.classList.add('selected');
+    });
+});
+
+// Cerrar sesión
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    location.reload();
+});
+
 window.deleteTransaction = deleteTransaction;
 window.deleteReminder = deleteReminder;
