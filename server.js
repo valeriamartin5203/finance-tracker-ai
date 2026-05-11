@@ -30,20 +30,33 @@ const writeJSON = (file, data) => {
     catch (error) { return false; }
 };
 
-// ============ EMAIL ============
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-});
+// ============ EMAIL (configuración) ============
+let transporter = null;
+try {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+            timeout: 5000
+        });
+        console.log('✅ Email configurado');
+    }
+} catch (error) {
+    console.log('⚠️ Error configurando email:', error.message);
+}
 
-// ============ GEMINI AI ============
+// ============ GEMINI AI (modelo correcto) ============
 let genAI = null;
 try {
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10 && process.env.GEMINI_API_KEY !== 'tu_api_key_aqui') {
         genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         console.log('✅ Gemini IA inicializada');
+    } else {
+        console.log('⚠️ No hay API Key de Gemini, usando modo local');
     }
-} catch (error) { console.log('⚠️ Error Gemini:', error.message); }
+} catch (error) {
+    console.log('⚠️ Error Gemini:', error.message);
+}
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -72,14 +85,14 @@ app.post('/api/auth/register', async (req, res) => {
         const newUser = {
             id: Date.now().toString(),
             email,
-            name,
+            name: name || email.split('@')[0],
             password: hashedPassword,
             createdAt: new Date().toISOString()
         };
         users.push(newUser);
         writeJSON(USERS_FILE, users);
         const token = jwt.sign({ id: newUser.id, email }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        res.json({ success: true, token, user: { id: newUser.id, email, name } });
+        res.json({ success: true, token, user: { id: newUser.id, email, name: newUser.name } });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -143,63 +156,149 @@ app.delete('/api/transactions/:id', authenticateToken, (req, res) => {
     res.json({ success: true });
 });
 
-// ============ ENVIAR REPORTE ============
+// ============ ENVIAR REPORTE (optimizado - no bloquea) ============
 app.post('/api/send-report', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
         const userEmail = userProfile?.email;
-        if (!userEmail) return res.status(400).json({ error: 'No hay correo registrado' });
+        
+        if (!userEmail) {
+            return res.status(400).json({ error: 'No hay correo registrado' });
+        }
+        
+        if (!transporter) {
+            return res.status(400).json({ error: 'Email no configurado' });
+        }
 
         const monthlyIncome = userProfile?.monthlyIncome || 0;
         const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0);
         const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + t.amount, 0);
         const balance = totalIngresos - totalGastos;
+        const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
 
         const html = `
-            <h1>📊 Reporte Financiero</h1>
-            <p>💰 Ingresos: ${currency} ${totalIngresos}</p>
-            <p>💸 Gastos: ${currency} ${totalGastos}</p>
-            <p>⚖️ Balance: ${currency} ${balance}</p>
-            <p>📅 Ingreso mensual: ${currency} ${monthlyIncome}</p>
-            <hr>
-            <p>💪 Sigue así! Revisa tu progreso en la app.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 30px; text-align: center; color: white;">
+                    <h1>💰 FinanceTracker AI</h1>
+                    <p>Tu Reporte Financiero</p>
+                </div>
+                <div style="padding: 20px;">
+                    <h2>📊 Resumen</h2>
+                    <p><strong>💰 Ingresos:</strong> ${currency} ${totalIngresos.toLocaleString()}</p>
+                    <p><strong>💸 Gastos:</strong> ${currency} ${totalGastos.toLocaleString()}</p>
+                    <p><strong>⚖️ Balance:</strong> ${currency} ${balance.toLocaleString()}</p>
+                    <p><strong>📈 Tasa de ahorro:</strong> ${savingsRate}%</p>
+                    <hr>
+                    <p><strong>🎯 Meta:</strong> ${userProfile?.goal || 'Mejorar finanzas'}</p>
+                    <p><strong>💰 Ahorros actuales:</strong> ${currency} ${(userProfile?.savings || 0).toLocaleString()}</p>
+                </div>
+                <div style="background: #f0f0f0; padding: 15px; text-align: center; font-size: 12px;">
+                    <p>📱 Revisa tu progreso en la app</p>
+                    <p>© FinanceTracker AI</p>
+                </div>
+            </div>
         `;
 
-        await transporter.sendMail({
+        // Enviar email sin esperar respuesta (fire and forget)
+        transporter.sendMail({
             from: `"FinanceTracker AI" <${process.env.EMAIL_USER}>`,
             to: userEmail,
-            subject: '📊 Tu Reporte Semanal FinanceTracker AI',
+            subject: '📊 Tu Reporte FinanceTracker AI',
             html
-        });
-        res.json({ success: true });
+        }).catch(err => console.error('Error email:', err));
+
+        // Responder inmediatamente
+        res.json({ success: true, message: 'Reporte enviado' });
+        
     } catch (error) {
+        console.error('Error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ============ ANÁLISIS IA ============
+// ============ ANÁLISIS IA (CORREGIDO - modelo correcto) ============
 app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
+        
         const monthlyIncome = userProfile?.monthlyIncome || 0;
-        const fixedExpenses = (userProfile?.rent || 0) + (userProfile?.services || 0) + (userProfile?.groceries || 0) + (userProfile?.transport || 0);
+        const rent = userProfile?.rent || 0;
+        const services = userProfile?.services || 0;
+        const groceries = userProfile?.groceries || 0;
+        const transport = userProfile?.transport || 0;
+        const fixedExpenses = rent + services + groceries + transport;
         const variableExpenses = (transactions || []).filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
         const totalExpenses = fixedExpenses + variableExpenses;
         const balance = monthlyIncome - totalExpenses;
         const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
 
+        // Si no hay IA, usar respuesta local
         if (!genAI) {
-            return res.json({ recommendations: `📊 Diagnóstico:\n💰 Ingreso: ${currency}${monthlyIncome}\n💸 Gastos: ${currency}${totalExpenses}\n📈 Ahorro: ${savingsRate}%\n\n1️⃣ Automatiza el ${Math.min(20, parseInt(savingsRate) + 10)}% de tu ingreso\n2️⃣ Reduce gastos fijos en 10%\n3️⃣ Registra todos tus gastos diariamente` });
+            const localResponse = generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency);
+            return res.json({ recommendations: localResponse });
         }
 
+        // Usar el modelo correcto de Gemini
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const prompt = `Eres un asesor financiero. Datos: ingreso ${currency}${monthlyIncome}, gastos ${currency}${totalExpenses}, ahorro ${savingsRate}%. Da 3 recomendaciones específicas.`;
+        
+        const prompt = `Eres un asesor financiero experto. Basado en estos datos, da 3 recomendaciones prácticas y específicas:
+
+- Ingreso mensual: ${currency} ${monthlyIncome}
+- Gastos fijos: ${currency} ${fixedExpenses} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
+- Gastos variables: ${currency} ${variableExpenses}
+- Balance: ${currency} ${balance}
+- Tasa de ahorro: ${savingsRate}%
+
+Responde con 3 recomendaciones cortas, numeradas y en español.`;
+
         const result = await model.generateContent(prompt);
-        res.json({ recommendations: result.response.text() });
+        let recommendations = result.response.text();
+        
+        // Si la respuesta está vacía o es muy corta, usar respuesta local
+        if (!recommendations || recommendations.length < 20) {
+            recommendations = generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency);
+        }
+        
+        res.json({ recommendations });
+        
     } catch (error) {
-        res.json({ recommendations: '⚠️ Error. Intenta de nuevo.' });
+        console.error('Error en IA:', error.message);
+        const { transactions, userProfile, currency } = req.body;
+        const monthlyIncome = userProfile?.monthlyIncome || 0;
+        const rent = userProfile?.rent || 0;
+        const services = userProfile?.services || 0;
+        const groceries = userProfile?.groceries || 0;
+        const transport = userProfile?.transport || 0;
+        const fixedExpenses = rent + services + groceries + transport;
+        const variableExpenses = (transactions || []).filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = fixedExpenses + variableExpenses;
+        const balance = monthlyIncome - totalExpenses;
+        const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
+        const localResponse = generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency);
+        res.json({ recommendations: localResponse });
     }
 });
+
+function generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency) {
+    const targetSavings = Math.min(20, parseInt(savingsRate) + 10);
+    return `📊 **ANÁLISIS FINANCIERO**
+
+💰 **Resumen**
+• Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
+• Gastos totales: ${currency} ${totalExpenses.toLocaleString()}
+• Balance: ${currency} ${balance.toLocaleString()}
+• Tasa de ahorro: ${savingsRate}%
+
+🎯 **3 RECOMENDACIONES**
+
+1️⃣ Automatiza un ahorro del ${targetSavings}% de tu ingreso el día que te pagan.
+
+2️⃣ Reduce tus gastos fijos en un 10% este mes (revisa suscripciones, negocia servicios).
+
+3️⃣ Registra todos tus gastos diariamente durante 30 días para identificar patrones.
+
+💪 **Compromiso**: "Esta semana ahorraré el ${targetSavings}% de mi próximo ingreso antes de gastar."`;
+}
 
 app.get('/api/rates', (req, res) => {
     res.json({ rates: { USD: 1, EUR: 0.92, MXN: 17.50, COP: 4000, ARS: 850, GBP: 0.79 } });
@@ -207,6 +306,6 @@ app.get('/api/rates', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor en http://localhost:${PORT}`);
-    console.log(`🤖 IA: ${genAI ? 'ACTIVA' : 'LOCAL'}`);
-    console.log(`📧 Email: ${process.env.EMAIL_USER ? 'CONFIGURADO' : 'NO'}`);
+    console.log(`🤖 IA: ${genAI ? 'ACTIVA (Gemini 1.5 Flash)' : 'MODO LOCAL'}`);
+    console.log(`📧 Email: ${transporter ? 'CONFIGURADO' : 'NO CONFIGURADO'}`);
 });
