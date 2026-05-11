@@ -319,18 +319,42 @@ async function checkAuthAndStart() {
     if (savedToken && savedUser) {
         token = savedToken;
         currentUser = JSON.parse(savedUser);
-        document.getElementById('authModal').style.display = 'none';
         
-        const hasProfile = await loadProfile();
-        if (!hasProfile || !userProfile || !userProfile.monthlyIncome) {
-            document.getElementById('profileModal').style.display = 'flex';
+        // Probar si el token es válido
+        try {
+            const testRes = await fetch('/api/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (testRes.status === 401 || testRes.status === 403) {
+                // Token inválido, cerrar sesión
+                console.log('Token inválido, cerrando sesión');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                document.getElementById('authModal').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('authModal').style.display = 'none';
+            
+            const hasProfile = await loadProfile();
+            if (!hasProfile || !userProfile || !userProfile.monthlyIncome) {
+                document.getElementById('profileModal').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+            } else {
+                document.getElementById('profileModal').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                document.getElementById('welcomeName').textContent = `Bienvenido, ${currentUser.name || currentUser.email?.split('@')[0]}`;
+                document.getElementById('welcomeDate').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                await loadTransactions();
+            }
+        } catch (error) {
+            console.error('Error verificando token:', error);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('authModal').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
-        } else {
-            document.getElementById('profileModal').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            document.getElementById('welcomeName').textContent = `Bienvenido, ${currentUser.name || currentUser.email.split('@')[0]}`;
-            document.getElementById('welcomeDate').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            await loadTransactions();
         }
     } else {
         document.getElementById('authModal').style.display = 'flex';
