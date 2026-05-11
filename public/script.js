@@ -12,7 +12,7 @@ let currentDate = new Date();
 let currentYear = currentDate.getFullYear();
 let currentMonth = currentDate.getMonth();
 
-// Funciones auxiliares
+// ============ FUNCIONES AUXILIARES ============
 function getCurrencySymbol() {
     const symbols = { USD: '$', EUR: '€', MXN: '$', COP: '$', ARS: '$', GBP: '£' };
     return symbols[currentCurrency] || '$';
@@ -27,7 +27,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Autenticación
+// ============ AUTENTICACIÓN ============
 async function register(email, password, name) {
     try {
         const res = await fetch('/api/auth/register', {
@@ -74,7 +74,7 @@ function logout() {
     if (floatBtn) floatBtn.remove();
 }
 
-// Perfil
+// ============ PERFIL ============
 async function loadProfile() {
     try {
         const res = await fetch('/api/profile', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -95,7 +95,7 @@ async function saveProfile(profile) {
     } catch (error) { return false; }
 }
 
-// Transacciones
+// ============ TRANSACCIONES ============
 async function loadTransactions() {
     try {
         const res = await fetch('/api/transactions', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -124,7 +124,7 @@ async function deleteTransaction(id) {
     } catch (error) { console.error(error); }
 }
 
-// Cálculos
+// ============ CÁLCULOS ============
 function calculateMonthlyIncome() {
     if (!userProfile) return 0;
     let monthly = userProfile.monthlyIncome || 0;
@@ -143,7 +143,7 @@ function calculateTotals() {
     return { income, totalExpenses: total, balance: income - total };
 }
 
-// Gráficas
+// ============ GRÁFICAS ============
 function updateChart() {
     const canvas = document.getElementById('expenseChart');
     if (!canvas) return;
@@ -213,7 +213,7 @@ function renderTransactions() {
     `).join('');
 }
 
-// IA
+// ============ IA Y REPORTES ============
 async function getAIAnalysis() {
     const { income, totalExpenses, balance } = calculateTotals();
     const savings = income>0?((balance/income)*100).toFixed(1):0;
@@ -264,7 +264,7 @@ function exportToCSV(){
     alert('✅ Exportado');
 }
 
-// Calendario de pagos
+// ============ CALENDARIO DE PAGOS ============
 async function loadScheduledPayments() {
     try{
         const res = await fetch('/api/scheduled-payments',{ headers:{'Authorization':`Bearer ${token}`} });
@@ -272,7 +272,9 @@ async function loadScheduledPayments() {
         scheduledPayments = data.payments || [];
         checkUpcomingPayments();
         updatePendingBadge();
-        if(document.getElementById('calendarPage').style.display !== 'none'){
+        // Si la página del calendario está visible, renderizar
+        const calendarPage = document.getElementById('calendarPage');
+        if(calendarPage && calendarPage.style.display !== 'none'){
             renderCalendar();
             renderPaymentsList();
         }
@@ -346,30 +348,58 @@ function updatePendingBadge() {
 }
 function renderCalendar() {
     const container = document.getElementById('calendarGrid');
-    if(!container) return;
+    if(!container){
+        console.warn('No se encontró calendarGrid');
+        return;
+    }
+    // Limpiar contenedor
+    container.innerHTML = '';
     const firstDay = new Date(currentYear, currentMonth, 1);
     const startDay = firstDay.getDay();
     const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    document.getElementById('currentMonthYear').textContent = `${monthNames[currentMonth]} ${currentYear}`;
-    let html = '';
-    for(let i=0;i<startDay;i++) html += `<div class="calendar-day"></div>`;
+    const monthYearElem = document.getElementById('currentMonthYear');
+    if(monthYearElem) monthYearElem.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    
+    // Días de la semana
+    const weekdays = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    weekdays.forEach(day => {
+        const weekdayDiv = document.createElement('div');
+        weekdayDiv.className = 'calendar-weekday';
+        weekdayDiv.textContent = day;
+        container.appendChild(weekdayDiv);
+    });
+    
+    // Celdas vacías antes del día 1
+    for(let i=0;i<startDay;i++){
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'calendar-day';
+        container.appendChild(emptyDiv);
+    }
+    
     const today = new Date(); today.setHours(0,0,0,0);
-    for(let d=1;d<=daysInMonth;d++){
+    for(let d=1; d<=daysInMonth; d++){
         const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const isToday = today.toDateString() === new Date(currentYear,currentMonth,d).toDateString();
-        const dayPayments = scheduledPayments.filter(p=>p.dueDate===dateStr);
-        html += `<div class="calendar-day ${isToday?'today':''}" data-date="${dateStr}">
-            <div class="calendar-day-number">${d}</div>
-            <div class="calendar-day-payments">`;
-        dayPayments.forEach(p=>{
-            html += `<div class="calendar-payment ${p.paid?'paid':''}" style="background:${p.color||'#ef4444'}" onclick="event.stopPropagation(); showPaymentDetails('${p._id}')">
-                ${p.name}: ${formatCurrency(p.amount)}
-            </div>`;
+        const dayPayments = scheduledPayments.filter(p => p.dueDate === dateStr);
+        const dayDiv = document.createElement('div');
+        dayDiv.className = `calendar-day ${isToday ? 'today' : ''}`;
+        dayDiv.setAttribute('data-date', dateStr);
+        dayDiv.innerHTML = `<div class="calendar-day-number">${d}</div><div class="calendar-day-payments"></div>`;
+        const paymentsContainer = dayDiv.querySelector('.calendar-day-payments');
+        dayPayments.forEach(p => {
+            const paymentDiv = document.createElement('div');
+            paymentDiv.className = `calendar-payment ${p.paid ? 'paid' : ''}`;
+            paymentDiv.style.background = p.color || '#ef4444';
+            paymentDiv.textContent = `${p.name}: ${formatCurrency(p.amount)}`;
+            paymentDiv.onclick = (e) => {
+                e.stopPropagation();
+                showPaymentDetails(p._id);
+            };
+            paymentsContainer.appendChild(paymentDiv);
         });
-        html += `</div></div>`;
+        container.appendChild(dayDiv);
     }
-    container.innerHTML = html;
 }
 function showPaymentDetails(id) {
     const p = scheduledPayments.find(p=>p._id===id);
@@ -414,24 +444,34 @@ function prevMonth(){ currentMonth--; if(currentMonth<0){ currentMonth=11; curre
 function nextMonth(){ currentMonth++; if(currentMonth>11){ currentMonth=0; currentYear++; } renderCalendar(); }
 function goToToday(){ currentDate=new Date(); currentYear=currentDate.getFullYear(); currentMonth=currentDate.getMonth(); renderCalendar(); }
 
+// ============ NAVEGACIÓN ENTRE PÁGINAS ============
 function initNavigation(){
-    const dashboard = document.getElementById('dashboardPage');
-    const calendar = document.getElementById('calendarPage');
-    document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
+    const dashboardPage = document.getElementById('dashboardPage');
+    const calendarPage = document.getElementById('calendarPage');
+    const navItems = document.querySelectorAll('.nav-item[data-page]');
+    navItems.forEach(item=>{
         item.addEventListener('click',(e)=>{
             e.preventDefault();
             const page = item.dataset.page;
-            document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+            // Cambiar clase activa
+            navItems.forEach(nav=>nav.classList.remove('active'));
             item.classList.add('active');
-            dashboard.classList.remove('active');
-            calendar.classList.remove('active');
-            if(page==='dashboard') dashboard.classList.add('active');
-            if(page==='calendar'){ calendar.classList.add('active'); renderCalendar(); renderPaymentsList(); }
+            // Ocultar todas las páginas
+            if(dashboardPage) dashboardPage.classList.remove('active');
+            if(calendarPage) calendarPage.classList.remove('active');
+            // Mostrar la página seleccionada
+            if(page === 'dashboard' && dashboardPage) dashboardPage.classList.add('active');
+            if(page === 'calendar' && calendarPage){
+                calendarPage.classList.add('active');
+                // Renderizar calendario cuando se muestra por primera vez
+                renderCalendar();
+                renderPaymentsList();
+            }
         });
     });
 }
 
-// Inicialización principal
+// ============ INICIALIZACIÓN PRINCIPAL ============
 async function checkAuthAndStart() {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -460,6 +500,7 @@ async function checkAuthAndStart() {
     }
 }
 
+// ============ EVENTOS ============
 document.addEventListener('DOMContentLoaded',()=>{
     checkAuthAndStart();
 
@@ -560,11 +601,15 @@ document.addEventListener('DOMContentLoaded',()=>{
         currentCurrency=e.target.value;
         updateUI();
         updateTrendChart();
-        if(document.getElementById('calendarPage').style.display!=='none'){ renderCalendar(); renderPaymentsList(); }
+        if(document.getElementById('calendarPage').style.display !== 'none'){
+            renderCalendar();
+            renderPaymentsList();
+        }
     });
     document.getElementById('themeToggle').addEventListener('click',()=> document.body.classList.toggle('dark'));
     document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
 
+    // Estilos para los radio cards
     document.querySelectorAll('.radio-card').forEach(card=>{
         card.addEventListener('click',function(){
             const radio = this.querySelector('input');
@@ -577,8 +622,10 @@ document.addEventListener('DOMContentLoaded',()=>{
         radio.addEventListener('change',(e)=> document.getElementById('debtFields').style.display = e.target.value==='si'?'block':'none');
     });
 
+    // Inicializar navegación
     initNavigation();
-    // Botón flotante
+
+    // Botón flotante para agregar pagos (aparece solo cuando se ve la app)
     const addFloatBtn = ()=>{
         if(document.getElementById('appContainer').style.display==='block' && token){
             if(!document.querySelector('.add-payment-btn')){
@@ -604,6 +651,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     addFloatBtn();
     new MutationObserver(addFloatBtn).observe(document.getElementById('appContainer'),{attributes:true,attributeFilter:['style']});
 
+    // Formulario de pago programado
     document.getElementById('scheduledPaymentForm').addEventListener('submit', async (e)=>{
         e.preventDefault();
         const payment = {
@@ -620,12 +668,14 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderPaymentsList();
     });
 
+    // Cerrar modales al hacer clic fuera
     ['authModal','profileModal','calendarModal'].forEach(id=>{
         const modal = document.getElementById(id);
         if(modal) modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.style.display='none'; });
     });
 });
 
+// Exponer funciones globales para los botones inline
 window.deleteTransaction = deleteTransaction;
 window.deleteScheduledPayment = deleteScheduledPayment;
 window.togglePaymentStatus = togglePaymentStatus;
