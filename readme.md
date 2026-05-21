@@ -109,11 +109,11 @@ PORT=3000
 JWT_SECRET=tu_clave_secreta_muy_segura_2024
 
 # Google AI (opcional, para asesor IA)
-GEMINI_API_KEY=AIzaSyC6H1zado1Kaag0XTyrx3aL6scl3-ayNCU
+GEMINI_API_KEY=api_de_Gemini_muy_secreta
 
 # Gmail (opcional, para envío de reportes)
 EMAIL_USER=tu_correo@gmail.com
-EMAIL_PASS=abcd efgh ijkl mnop
+EMAIL_PASS=pass_de_gmail
 ```
 
 **⚠️ Nota importante sobre EMAIL_PASS:**
