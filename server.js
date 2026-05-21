@@ -179,7 +179,24 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
         const ingresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0);
         const gastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + t.amount, 0);
         const balance = ingresos - gastos;
-        const html = `<div>... reporte ...</div>`;
+        const html = `<div style="font-family: Arial; max-width:600px; margin:auto">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white">
+                <h1>💰 FinanceTracker AI</h1>
+                <p>Tu Reporte Financiero</p>
+            </div>
+            <div style="padding:20px">
+                <h2>📊 Resumen</h2>
+                <p><strong>Ingresos:</strong> ${currency} ${ingresos}</p>
+                <p><strong>Gastos:</strong> ${currency} ${gastos}</p>
+                <p><strong>Balance:</strong> ${currency} ${balance}</p>
+                <hr>
+                <p><strong>Meta:</strong> ${userProfile.goal || 'Mejorar finanzas'}</p>
+                <p><strong>Ahorros:</strong> ${currency} ${userProfile.savings || 0}</p>
+            </div>
+            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px">
+                <p>© FinanceTracker AI</p>
+            </div>
+        </div>`;
         await transporter.sendMail({
             from: `"FinanceTracker AI" <${process.env.EMAIL_USER}>`,
             to: email,
@@ -190,98 +207,168 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ============ ANÁLISIS IA (CORREGIDO) ============
+// ============ ANÁLISIS IA REALISTA ============
 app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
-        // Validar que los datos llegaron
-        if (!userProfile) {
-            return res.json({ recommendations: '⚠️ No se encontró tu perfil financiero. Ve a "Mi perfil" y completa tus datos.' });
+
+        if (!userProfile || !userProfile.monthlyIncome) {
+            return res.json({ recommendations: '⚠️ Completa tu perfil financiero (ingresos, gastos fijos) antes de analizar.' });
         }
-        const monthlyIncome = userProfile.monthlyIncome || 0;
+
+        const monthlyIncome = userProfile.monthlyIncome;
         const rent = userProfile.rent || 0;
         const services = userProfile.services || 0;
         const groceries = userProfile.groceries || 0;
         const transport = userProfile.transport || 0;
         const fixedExpenses = rent + services + groceries + transport;
-        const variableExpenses = (transactions || []).filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
+
+        const categoryTotals = {};
+        (transactions || []).filter(t => t.type === 'gasto').forEach(t => {
+            categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+        });
+        const variableExpenses = Object.values(categoryTotals).reduce((a,b) => a+b, 0);
         const totalExpenses = fixedExpenses + variableExpenses;
         const balance = monthlyIncome - totalExpenses;
         const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
 
-        // Respuesta local (modo seguro)
-        const localResponse = generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency);
-        
-        if (!genAI) {
-            return res.json({ recommendations: localResponse });
+        let categoryBreakdown = '';
+        for (const [cat, amount] of Object.entries(categoryTotals)) {
+            const percent = ((amount / totalExpenses) * 100).toFixed(1);
+            categoryBreakdown += `- ${cat}: ${currency} ${amount.toLocaleString()} (${percent}% del gasto total)\n`;
+        }
+        if (!categoryBreakdown) categoryBreakdown = 'No hay gastos variables registrados aún.\n';
+
+        let debtInfo = '';
+        if (userProfile.hasDebt && userProfile.debtAmount > 0) {
+            const monthlyInterest = (userProfile.debtAmount * (userProfile.debtInterest / 100)) / 12;
+            debtInfo = `Deuda total: ${currency} ${userProfile.debtAmount.toLocaleString()} a ${userProfile.debtInterest}% anual (interés mensual ~${currency} ${monthlyInterest.toFixed(2)}).`;
+        } else {
+            debtInfo = 'No tienes deudas reportadas. ¡Excelente!';
         }
 
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-            const prompt = `Eres un asesor financiero experto. Basado en estos datos reales del cliente, genera 3 recomendaciones prácticas y personalizadas en español:
+        const goalMap = {
+            'ahorro': 'ahorrar para emergencias',
+            'casa': 'comprar una casa',
+            'auto': 'comprar un auto',
+            'viaje': 'hacer un viaje',
+            'invertir': 'invertir y hacer crecer tu dinero',
+            'libertad': 'alcanzar libertad financiera',
+            'deudas': 'pagar tus deudas'
+        };
+        const userGoal = goalMap[userProfile.goal] || 'mejorar tu salud financiera';
 
-- Ingreso mensual: ${currency} ${monthlyIncome}
-- Gastos fijos: ${currency} ${fixedExpenses} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
-- Gastos variables: ${currency} ${variableExpenses}
-- Balance: ${currency} ${balance}
+        const prompt = `Actúa como un ASESOR FINANCIERO con amplia experiencia. Tus recomendaciones deben ser PRÁCTICAS, NUMÉRICAS y ADAPTADAS a los datos reales del usuario. Nada de consejos genéricos. Usa los números que te doy.
+
+DATOS DEL USUARIO:
+- Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
+- Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
+- Gastos variables por categoría:
+${categoryBreakdown}
+- Total gastos mensuales: ${currency} ${totalExpenses.toLocaleString()}
+- Balance: ${currency} ${balance.toLocaleString()}
 - Tasa de ahorro: ${savingsRate}%
-- Meta: ${userProfile.goal || 'mejorar finanzas'}
+- Ahorros acumulados: ${currency} ${userProfile.savings.toLocaleString()}
+- ${debtInfo}
+- Meta principal: ${userGoal}
 
-Responde con 3 recomendaciones numeradas y breves.`;
-            const result = await model.generateContent(prompt);
-            const aiResponse = result.response.text();
-            if (aiResponse && aiResponse.length > 20) {
-                return res.json({ recommendations: aiResponse });
-            } else {
-                return res.json({ recommendations: localResponse });
-            }
-        } catch (aiError) {
-            console.error('Error llamando a Gemini:', aiError.message);
+Genera EXACTAMENTE 3 recomendaciones. Cada recomendación debe:
+
+1. Identificar una oportunidad concreta basada en los datos.
+2. Proponer una acción específica y realista.
+3. Incluir un cálculo de AHORRO POTENCIAL en números.
+4. Ser relevante para su meta (${userGoal}).
+
+Formato de respuesta:
+
+**Recomendación 1:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+**Recomendación 2:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+**Recomendación 3:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+
+Además, agrega una frase motivacional corta al final.`;
+
+        if (!genAI) {
+            const localResponse = generarRespuestaLocalRealista(
+                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
+                savingsRate, userProfile, currency, debtInfo, userGoal
+            );
             return res.json({ recommendations: localResponse });
         }
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContent(prompt);
+        let aiResponse = result.response.text();
+        if (!aiResponse || aiResponse.length < 50) {
+            aiResponse = generarRespuestaLocalRealista(
+                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
+                savingsRate, userProfile, currency, debtInfo, userGoal
+            );
+        }
+        res.json({ recommendations: aiResponse });
+
     } catch (error) {
-        console.error('Error en análisis IA:', error);
-        res.json({ recommendations: '⚠️ Error temporal. Intenta de nuevo más tarde.' });
+        console.error('Error en IA realista:', error);
+        res.json({ recommendations: '⚠️ No se pudo generar el análisis. Intenta de nuevo más tarde.' });
     }
 });
 
-function generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency) {
-    const target = Math.min(20, parseInt(savingsRate) + 10);
-    const goalText = {
-        'ahorro': 'ahorrar para emergencias',
-        'casa': 'comprar casa',
-        'auto': 'comprar auto',
-        'viaje': 'hacer un viaje',
-        'invertir': 'invertir',
-        'libertad': 'libertad financiera',
-        'deudas': 'pagar deudas'
-    };
-    return `📊 **ANÁLISIS FINANCIERO PERSONALIZADO**
+function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance, savingsRate, userProfile, currency, debtInfo, userGoal) {
+    let recomendaciones = [];
+    const targetSavings = Math.min(25, parseInt(savingsRate) + 10);
 
-💰 **Ingreso mensual:** ${currency} ${monthlyIncome.toLocaleString()}
-🏠 **Gastos fijos:** ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
-💸 **Gastos variables:** ${currency} ${(totalExpenses - fixedExpenses).toLocaleString()}
-⚖️ **Balance mensual:** ${currency} ${balance.toLocaleString()}
-📈 **Tasa de ahorro:** ${savingsRate}%
+    let topCategory = null;
+    let topAmount = 0;
+    for (const [cat, amt] of Object.entries(categoryTotals)) {
+        if (amt > topAmount) {
+            topAmount = amt;
+            topCategory = cat;
+        }
+    }
 
-🎯 **Meta seleccionada:** ${goalText[userProfile?.goal] || 'mejorar finanzas'}
+    if (topCategory && topAmount > 0) {
+        let reductionPercent = 0.15;
+        let saving = topAmount * reductionPercent;
+        if (topCategory === 'Comida') {
+            recomendaciones.push(`**Recomendación 1:** Reduce tus gastos en **${topCategory}** (${currency} ${topAmount.toLocaleString()}/mes). Cocina en casa 4 veces más por semana y planea tus comidas. → Ahorro estimado: ${currency} ${saving.toLocaleString()}/mes.`);
+        } else if (topCategory === 'Transporte') {
+            recomendaciones.push(`**Recomendación 1:** Tu mayor gasto es **${topCategory}** (${currency} ${topAmount.toLocaleString()}/mes). Usa transporte público 3 días a la semana o comparte viajes. → Ahorro estimado: ${currency} ${saving.toLocaleString()}/mes.`);
+        } else if (topCategory === 'Entretenimiento') {
+            recomendaciones.push(`**Recomendación 1:** Estás gastando ${currency} ${topAmount.toLocaleString()} en **${topCategory}**. Sustituye 2 salidas al mes por actividades gratis. → Ahorro estimado: ${currency} ${saving.toLocaleString()}/mes.`);
+        } else {
+            recomendaciones.push(`**Recomendación 1:** Tu mayor gasto es **${topCategory}** (${currency} ${topAmount.toLocaleString()}/mes). Revisa si realmente necesitas ese nivel de gasto y reduce en un 15%. → Ahorro estimado: ${currency} ${saving.toLocaleString()}/mes.`);
+        }
+    } else {
+        recomendaciones.push(`**Recomendación 1:** Automatiza un ahorro del ${targetSavings}% de tu ingreso el día que te pagan. Si ganas ${currency} ${monthlyIncome.toLocaleString()}, serían ${currency} ${(monthlyIncome * targetSavings / 100).toLocaleString()} mensuales.`);
+    }
 
-🔍 **3 RECOMENDACIONES ACCIONABLES**
+    if (fixedExpenses > monthlyIncome * 0.5) {
+        let savingFixed = fixedExpenses * 0.1;
+        recomendaciones.push(`**Recomendación 2:** Tus gastos fijos representan el ${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% de tus ingresos (ideal <50%). Negocia tu renta, cambia de plan de internet o reduce suscripciones. → Ahorro potencial: ${currency} ${savingFixed.toLocaleString()}/mes.`);
+    } else {
+        let savingVariable = totalExpenses * 0.1;
+        recomendaciones.push(`**Recomendación 2:** Revisa tus gastos variables. Identifica 3 gastos hormiga (cafés, antojos, apps) y elimínalos. → Ahorro estimado: ${currency} ${savingVariable.toLocaleString()}/mes.`);
+    }
 
-1️⃣ **Automatiza tu ahorro**  
-   Configura una transferencia automática del ${target}% de tu ingreso el día que te pagan.  
-   *Ejemplo:* si ganas ${currency} ${monthlyIncome.toLocaleString()}, ahorra ${currency} ${(monthlyIncome * target / 100).toLocaleString()} cada mes.
+    if (userProfile.hasDebt && userProfile.debtAmount > 0) {
+        let extraPayment = balance > 0 ? balance * 0.3 : 500;
+        recomendaciones.push(`**Recomendación 3:** Destina al menos ${currency} ${extraPayment.toLocaleString()} adicionales cada mes a pagar tu deuda (${currency} ${userProfile.debtAmount.toLocaleString()}). Pagarás más rápido y ahorrarás en intereses.`);
+    } else if (userProfile.savings < totalExpenses * 3) {
+        let needed = (totalExpenses * 3) - userProfile.savings;
+        recomendaciones.push(`**Recomendación 3:** Prioriza crear un fondo de emergencia de 3 meses de gastos (${currency} ${(totalExpenses*3).toLocaleString()}). Actualmente tienes ${currency} ${userProfile.savings.toLocaleString()}. Aporta ${currency} ${Math.ceil(needed/6).toLocaleString()} cada mes durante 6 meses.`);
+    } else {
+        recomendaciones.push(`**Recomendación 3:** Invierte tu excedente mensual (${currency} ${balance.toLocaleString()}) en CETES o una cuenta de alto rendimiento. Así tu dinero crece sin riesgo.`);
+    }
 
-2️⃣ **Reduce gastos fijos**  
-   Revisa tus suscripciones y servicios. Intenta negociar o cancelar lo que no usas.  
-   *Potencial de ahorro:* 10% = ${currency} ${(fixedExpenses * 0.1).toLocaleString()} mensuales.
+    let motivacion = '';
+    if (balance < 0) {
+        motivacion = '💪 El primer paso para salir del déficit es conocer tus números. ¡Tú puedes cambiarlo!';
+    } else if (savingsRate < 10) {
+        motivacion = '💪 Cada pequeño ahorro suma. Empieza hoy con un 5% y ve aumentando.';
+    } else {
+        motivacion = `💪 ¡Vas por buen camino! Aplica estas estrategias y alcanzarás tu meta de ${userGoal} más rápido.`;
+    }
 
-3️⃣ **Controla los gastos hormiga**  
-   Durante 30 días, anota CADA pequeño gasto (café, antojos, etc.). Al final del mes, sorprenderás cuánto puedes ahorrar.  
-   *Meta:* Reducir un 20% esos gastos.
-
-💪 **Compromiso semanal**  
-"Esta semana ahorraré el ${target}% de mi próximo ingreso antes de gastar."`;
+    return recomendaciones.join('\n\n') + '\n\n' + motivacion;
 }
 
 app.get('/api/rates', (req, res) => {
@@ -290,5 +377,5 @@ app.get('/api/rates', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor en http://localhost:${PORT}`);
-    console.log(`🤖 IA: ${genAI ? 'ACTIVA' : 'LOCAL'}`);
+    console.log(`🤖 IA: ${genAI ? 'ACTIVA (realista)' : 'MODO LOCAL'}`);
 });
