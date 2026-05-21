@@ -48,11 +48,17 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 
 // ============ GEMINI IA ============
 let genAI = null;
+let useGemini = false;
 if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10 && process.env.GEMINI_API_KEY !== 'tu_api_key_aqui') {
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    console.log('✅ Gemini IA inicializada');
+    try {
+        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        useGemini = true;
+        console.log('✅ Gemini IA inicializada (modo real)');
+    } catch (err) {
+        console.log('⚠️ Error inicializando Gemini:', err.message);
+    }
 } else {
-    console.log('⚠️ Modo local (sin IA)');
+    console.log('⚠️ Modo local (sin API key de Gemini)');
 }
 
 app.use(express.json());
@@ -207,111 +213,7 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ============ ANÁLISIS IA REALISTA ============
-app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
-    try {
-        const { transactions, userProfile, currency } = req.body;
-
-        if (!userProfile || !userProfile.monthlyIncome) {
-            return res.json({ recommendations: '⚠️ Completa tu perfil financiero (ingresos, gastos fijos) antes de analizar.' });
-        }
-
-        const monthlyIncome = userProfile.monthlyIncome;
-        const rent = userProfile.rent || 0;
-        const services = userProfile.services || 0;
-        const groceries = userProfile.groceries || 0;
-        const transport = userProfile.transport || 0;
-        const fixedExpenses = rent + services + groceries + transport;
-
-        const categoryTotals = {};
-        (transactions || []).filter(t => t.type === 'gasto').forEach(t => {
-            categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-        });
-        const variableExpenses = Object.values(categoryTotals).reduce((a,b) => a+b, 0);
-        const totalExpenses = fixedExpenses + variableExpenses;
-        const balance = monthlyIncome - totalExpenses;
-        const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
-
-        let categoryBreakdown = '';
-        for (const [cat, amount] of Object.entries(categoryTotals)) {
-            const percent = ((amount / totalExpenses) * 100).toFixed(1);
-            categoryBreakdown += `- ${cat}: ${currency} ${amount.toLocaleString()} (${percent}% del gasto total)\n`;
-        }
-        if (!categoryBreakdown) categoryBreakdown = 'No hay gastos variables registrados aún.\n';
-
-        let debtInfo = '';
-        if (userProfile.hasDebt && userProfile.debtAmount > 0) {
-            const monthlyInterest = (userProfile.debtAmount * (userProfile.debtInterest / 100)) / 12;
-            debtInfo = `Deuda total: ${currency} ${userProfile.debtAmount.toLocaleString()} a ${userProfile.debtInterest}% anual (interés mensual ~${currency} ${monthlyInterest.toFixed(2)}).`;
-        } else {
-            debtInfo = 'No tienes deudas reportadas. ¡Excelente!';
-        }
-
-        const goalMap = {
-            'ahorro': 'ahorrar para emergencias',
-            'casa': 'comprar una casa',
-            'auto': 'comprar un auto',
-            'viaje': 'hacer un viaje',
-            'invertir': 'invertir y hacer crecer tu dinero',
-            'libertad': 'alcanzar libertad financiera',
-            'deudas': 'pagar tus deudas'
-        };
-        const userGoal = goalMap[userProfile.goal] || 'mejorar tu salud financiera';
-
-        const prompt = `Actúa como un ASESOR FINANCIERO con amplia experiencia. Tus recomendaciones deben ser PRÁCTICAS, NUMÉRICAS y ADAPTADAS a los datos reales del usuario. Nada de consejos genéricos. Usa los números que te doy.
-
-DATOS DEL USUARIO:
-- Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
-- Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
-- Gastos variables por categoría:
-${categoryBreakdown}
-- Total gastos mensuales: ${currency} ${totalExpenses.toLocaleString()}
-- Balance: ${currency} ${balance.toLocaleString()}
-- Tasa de ahorro: ${savingsRate}%
-- Ahorros acumulados: ${currency} ${userProfile.savings.toLocaleString()}
-- ${debtInfo}
-- Meta principal: ${userGoal}
-
-Genera EXACTAMENTE 3 recomendaciones. Cada recomendación debe:
-
-1. Identificar una oportunidad concreta basada en los datos.
-2. Proponer una acción específica y realista.
-3. Incluir un cálculo de AHORRO POTENCIAL en números.
-4. Ser relevante para su meta (${userGoal}).
-
-Formato de respuesta:
-
-**Recomendación 1:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
-**Recomendación 2:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
-**Recomendación 3:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
-
-Además, agrega una frase motivacional corta al final.`;
-
-        if (!genAI) {
-            const localResponse = generarRespuestaLocalRealista(
-                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
-                savingsRate, userProfile, currency, debtInfo, userGoal
-            );
-            return res.json({ recommendations: localResponse });
-        }
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const result = await model.generateContent(prompt);
-        let aiResponse = result.response.text();
-        if (!aiResponse || aiResponse.length < 50) {
-            aiResponse = generarRespuestaLocalRealista(
-                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
-                savingsRate, userProfile, currency, debtInfo, userGoal
-            );
-        }
-        res.json({ recommendations: aiResponse });
-
-    } catch (error) {
-        console.error('Error en IA realista:', error);
-        res.json({ recommendations: '⚠️ No se pudo generar el análisis. Intenta de nuevo más tarde.' });
-    }
-});
-
+// ============ FUNCIÓN LOCAL REALISTA (siempre funciona) ============
 function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance, savingsRate, userProfile, currency, debtInfo, userGoal) {
     let recomendaciones = [];
     const targetSavings = Math.min(25, parseInt(savingsRate) + 10);
@@ -371,11 +273,107 @@ function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTot
     return recomendaciones.join('\n\n') + '\n\n' + motivacion;
 }
 
+// ============ ANÁLISIS IA (con manejo robusto de errores) ============
+app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
+    try {
+        const { transactions, userProfile, currency } = req.body;
+
+        if (!userProfile || !userProfile.monthlyIncome) {
+            return res.json({ recommendations: '⚠️ Completa tu perfil financiero (ingresos, gastos fijos) antes de analizar.' });
+        }
+
+        const monthlyIncome = userProfile.monthlyIncome;
+        const rent = userProfile.rent || 0;
+        const services = userProfile.services || 0;
+        const groceries = userProfile.groceries || 0;
+        const transport = userProfile.transport || 0;
+        const fixedExpenses = rent + services + groceries + transport;
+
+        const categoryTotals = {};
+        (transactions || []).filter(t => t.type === 'gasto').forEach(t => {
+            categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+        });
+        const variableExpenses = Object.values(categoryTotals).reduce((a,b) => a+b, 0);
+        const totalExpenses = fixedExpenses + variableExpenses;
+        const balance = monthlyIncome - totalExpenses;
+        const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
+
+        let categoryBreakdown = '';
+        for (const [cat, amount] of Object.entries(categoryTotals)) {
+            const percent = ((amount / totalExpenses) * 100).toFixed(1);
+            categoryBreakdown += `- ${cat}: ${currency} ${amount.toLocaleString()} (${percent}% del gasto total)\n`;
+        }
+        if (!categoryBreakdown) categoryBreakdown = 'No hay gastos variables registrados aún.\n';
+
+        let debtInfo = '';
+        if (userProfile.hasDebt && userProfile.debtAmount > 0) {
+            const monthlyInterest = (userProfile.debtAmount * (userProfile.debtInterest / 100)) / 12;
+            debtInfo = `Deuda total: ${currency} ${userProfile.debtAmount.toLocaleString()} a ${userProfile.debtInterest}% anual (interés mensual ~${currency} ${monthlyInterest.toFixed(2)}).`;
+        } else {
+            debtInfo = 'No tienes deudas reportadas. ¡Excelente!';
+        }
+
+        const goalMap = {
+            'ahorro': 'ahorrar para emergencias',
+            'casa': 'comprar una casa',
+            'auto': 'comprar un auto',
+            'viaje': 'hacer un viaje',
+            'invertir': 'invertir y hacer crecer tu dinero',
+            'libertad': 'alcanzar libertad financiera',
+            'deudas': 'pagar tus deudas'
+        };
+        const userGoal = goalMap[userProfile.goal] || 'mejorar tu salud financiera';
+
+        // Si no hay Gemini, usar modo local
+        if (!useGemini) {
+            const localResponse = generarRespuestaLocalRealista(
+                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
+                savingsRate, userProfile, currency, debtInfo, userGoal
+            );
+            return res.json({ recommendations: localResponse });
+        }
+
+        // Intentar llamar a Gemini
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            const prompt = `Actúa como un ASESOR FINANCIERO experto. Datos reales del usuario:
+- Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
+- Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
+- Gastos variables: ${categoryBreakdown}
+- Balance: ${currency} ${balance.toLocaleString()}
+- Tasa ahorro: ${savingsRate}%
+- Deudas: ${debtInfo}
+- Meta: ${userGoal}
+
+Genera 3 recomendaciones específicas con números. Cada una debe incluir una acción y un ahorro estimado. Formato: **Recomendación X:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes. Al final una frase motivacional.`;
+
+            const result = await model.generateContent(prompt);
+            let aiResponse = result.response.text();
+            if (!aiResponse || aiResponse.length < 50) {
+                throw new Error('Respuesta muy corta o vacía');
+            }
+            return res.json({ recommendations: aiResponse });
+        } catch (geminiError) {
+            console.error('Error llamando a Gemini:', geminiError.message);
+            // Fallback a modo local
+            const localResponse = generarRespuestaLocalRealista(
+                monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
+                savingsRate, userProfile, currency, debtInfo, userGoal
+            );
+            return res.json({ recommendations: localResponse });
+        }
+
+    } catch (error) {
+        console.error('Error en /api/ai/analyze:', error);
+        res.json({ recommendations: '⚠️ No se pudo generar el análisis. Intenta de nuevo más tarde.' });
+    }
+});
+
 app.get('/api/rates', (req, res) => {
     res.json({ rates: { USD:1, EUR:0.92, MXN:17.50, COP:4000, ARS:850, GBP:0.79 } });
 });
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor en http://localhost:${PORT}`);
-    console.log(`🤖 IA: ${genAI ? 'ACTIVA (realista)' : 'MODO LOCAL'}`);
+    console.log(`🤖 IA: ${useGemini ? 'ACTIVA (Gemini)' : 'MODO LOCAL'}`);
 });
