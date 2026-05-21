@@ -124,7 +124,7 @@ async function deleteTransaction(id) {
     } catch (error) { console.error(error); }
 }
 
-// ============ CÁLCULOS ============
+// ============ CÁLCULOS (asegurar que usan userProfile y transactions actuales) ============
 function calculateMonthlyIncome() {
     if (!userProfile) return 0;
     let monthly = userProfile.monthlyIncome || 0;
@@ -132,15 +132,69 @@ function calculateMonthlyIncome() {
     if (userProfile.incomeFrequency === 'quincenal') return monthly * 2;
     return monthly;
 }
+
 function calculateFixedExpenses() {
     if (!userProfile) return 0;
     return (userProfile.rent||0)+(userProfile.services||0)+(userProfile.groceries||0)+(userProfile.transport||0);
 }
+
 function calculateTotals() {
     const income = calculateMonthlyIncome();
-    const variable = transactions.filter(t=>t.type==='gasto').reduce((s,t)=>s+t.amount,0);
-    const total = calculateFixedExpenses() + variable;
-    return { income, totalExpenses: total, balance: income - total };
+    const variableExpenses = transactions.filter(t=>t.type==='gasto').reduce((sum,t)=>sum + (t.amount||0),0);
+    const fixed = calculateFixedExpenses();
+    const totalExpenses = fixed + variableExpenses;
+    const balance = income - totalExpenses;
+    return { income, totalExpenses, balance };
+}
+
+// ============ ANÁLISIS IA ============
+async function getAIAnalysis() {
+    // Primero aseguramos que tenemos los datos más recientes
+    await loadProfile();        // recarga perfil
+    await loadTransactions();   // recarga transacciones
+    
+    const { income, totalExpenses, balance } = calculateTotals();
+    
+    // Mostrar loading en la UI
+    const container = document.getElementById('aiRecommendations');
+    container.innerHTML = '<div class="loading-spinner">🧠 Analizando con IA...</div>';
+    
+    try {
+        const res = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                transactions: transactions.filter(t => t.type === 'gasto'),
+                userProfile: userProfile,
+                currency: getCurrencySymbol(),
+                totalIncome: income,
+                totalExpenses: totalExpenses,
+                balance: balance
+            })
+        });
+        const data = await res.json();
+        return data.recommendations;
+    } catch (error) {
+        console.error('Error en análisis IA:', error);
+        return generarRespuestaLocal(income, totalExpenses, balance, (income>0?((balance/income)*100).toFixed(1):0));
+    }
+}
+
+function generarRespuestaLocal(income, total, balance, savings) {
+    const target = Math.min(20, parseInt(savings)+10);
+    return `📊 **Análisis Financiero (Modo Local)**
+
+💰 Ingreso: ${formatCurrency(income)}
+💸 Gastos: ${formatCurrency(total)}
+⚖️ Balance: ${formatCurrency(balance)}
+📈 Ahorro: ${savings}%
+
+1️⃣ Automatiza un ahorro del ${target}% de tu ingreso.
+2️⃣ Reduce gastos fijos en un 10% este mes.
+3️⃣ Registra todos tus gastos diariamente.`;
 }
 
 // ============ GRÁFICAS ============

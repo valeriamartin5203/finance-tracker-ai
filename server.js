@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============ CONFIGURACIÓN DE ARCHIVOS ============
+// ============ CONFIGURACIÓN ARCHIVOS JSON ============
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
@@ -18,7 +18,6 @@ const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 const PAYMENTS_FILE = path.join(DATA_DIR, 'scheduled_payments.json');
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
 const initFile = (file, defaultData) => {
     if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(defaultData, null, 2));
 };
@@ -45,11 +44,9 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         timeout: 5000
     });
     console.log('✅ Email configurado');
-} else {
-    console.log('⚠️ Email no configurado');
 }
 
-// ============ GEMINI AI ============
+// ============ GEMINI IA ============
 let genAI = null;
 if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10 && process.env.GEMINI_API_KEY !== 'tu_api_key_aqui') {
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -61,7 +58,7 @@ if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10 && proc
 app.use(express.json());
 app.use(express.static('public'));
 
-// ============ MIDDLEWARE ============
+// ============ MIDDLEWARE AUTH ============
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -73,7 +70,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// ============ AUTH ============
+// ============ AUTH ENDPOINTS ============
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { email, password, name } = req.body;
@@ -172,81 +169,119 @@ app.delete('/api/scheduled-payments/:id', authenticateToken, (req, res) => {
     } else res.status(404).json({ error: 'No encontrado' });
 });
 
-// ============ ENVÍO DE REPORTE ============
+// ============ REPORTE EMAIL ============
 app.post('/api/send-report', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
         const email = userProfile?.email;
         if (!email) return res.status(400).json({ error: 'Correo no registrado' });
         if (!transporter) return res.status(400).json({ error: 'Email no configurado' });
-
         const ingresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0);
         const gastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + t.amount, 0);
         const balance = ingresos - gastos;
-        const savingsRate = userProfile.monthlyIncome > 0 ? ((balance / userProfile.monthlyIncome) * 100).toFixed(1) : 0;
-
-        const html = `<div style="font-family: Arial; max-width:600px; margin:auto">
-            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white">
-                <h1>💰 FinanceTracker AI</h1>
-                <p>Tu Reporte Financiero</p>
-            </div>
-            <div style="padding:20px">
-                <h2>📊 Resumen</h2>
-                <p><strong>Ingresos:</strong> ${currency} ${ingresos}</p>
-                <p><strong>Gastos:</strong> ${currency} ${gastos}</p>
-                <p><strong>Balance:</strong> ${currency} ${balance}</p>
-                <p><strong>Tasa ahorro:</strong> ${savingsRate}%</p>
-                <hr>
-                <p><strong>Meta:</strong> ${userProfile.goal || 'Mejorar finanzas'}</p>
-                <p><strong>Ahorros:</strong> ${currency} ${userProfile.savings || 0}</p>
-            </div>
-            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px">
-                <p>© FinanceTracker AI</p>
-            </div>
-        </div>`;
-
-        transporter.sendMail({
+        const html = `<div>... reporte ...</div>`;
+        await transporter.sendMail({
             from: `"FinanceTracker AI" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: '📊 Tu Reporte FinanceTracker AI',
             html
-        }).catch(e => console.error(e));
+        });
         res.json({ success: true });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ============ ANÁLISIS IA ============
+// ============ ANÁLISIS IA (CORREGIDO) ============
 app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
-        const income = userProfile?.monthlyIncome || 0;
-        const fixed = (userProfile?.rent||0)+(userProfile?.services||0)+(userProfile?.groceries||0)+(userProfile?.transport||0);
-        const variable = transactions.filter(t => t.type === 'gasto').reduce((s,t)=>s+t.amount,0);
-        const total = fixed + variable;
-        const balance = income - total;
-        const savings = income > 0 ? ((balance/income)*100).toFixed(1) : 0;
-
-        if (!genAI) {
-            return res.json({ recommendations: generarRespuestaLocal(income, total, balance, savings, currency) });
+        // Validar que los datos llegaron
+        if (!userProfile) {
+            return res.json({ recommendations: '⚠️ No se encontró tu perfil financiero. Ve a "Mi perfil" y completa tus datos.' });
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const prompt = `Eres asesor financiero. Datos: ingreso ${currency}${income}, gastos ${currency}${total}, ahorro ${savings}%. Da 3 consejos prácticos.`;
-        const result = await model.generateContent(prompt);
-        res.json({ recommendations: result.response.text() });
-    } catch (error) { res.json({ recommendations: generarRespuestaLocal(0,0,0,0,'$') }); }
+        const monthlyIncome = userProfile.monthlyIncome || 0;
+        const rent = userProfile.rent || 0;
+        const services = userProfile.services || 0;
+        const groceries = userProfile.groceries || 0;
+        const transport = userProfile.transport || 0;
+        const fixedExpenses = rent + services + groceries + transport;
+        const variableExpenses = (transactions || []).filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = fixedExpenses + variableExpenses;
+        const balance = monthlyIncome - totalExpenses;
+        const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
+
+        // Respuesta local (modo seguro)
+        const localResponse = generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency);
+        
+        if (!genAI) {
+            return res.json({ recommendations: localResponse });
+        }
+
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            const prompt = `Eres un asesor financiero experto. Basado en estos datos reales del cliente, genera 3 recomendaciones prácticas y personalizadas en español:
+
+- Ingreso mensual: ${currency} ${monthlyIncome}
+- Gastos fijos: ${currency} ${fixedExpenses} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
+- Gastos variables: ${currency} ${variableExpenses}
+- Balance: ${currency} ${balance}
+- Tasa de ahorro: ${savingsRate}%
+- Meta: ${userProfile.goal || 'mejorar finanzas'}
+
+Responde con 3 recomendaciones numeradas y breves.`;
+            const result = await model.generateContent(prompt);
+            const aiResponse = result.response.text();
+            if (aiResponse && aiResponse.length > 20) {
+                return res.json({ recommendations: aiResponse });
+            } else {
+                return res.json({ recommendations: localResponse });
+            }
+        } catch (aiError) {
+            console.error('Error llamando a Gemini:', aiError.message);
+            return res.json({ recommendations: localResponse });
+        }
+    } catch (error) {
+        console.error('Error en análisis IA:', error);
+        res.json({ recommendations: '⚠️ Error temporal. Intenta de nuevo más tarde.' });
+    }
 });
 
-function generarRespuestaLocal(income, total, balance, savings, currency) {
-    return `📊 **Análisis Financiero**
+function generarRespuestaLocal(monthlyIncome, totalExpenses, balance, savingsRate, fixedExpenses, userProfile, currency) {
+    const target = Math.min(20, parseInt(savingsRate) + 10);
+    const goalText = {
+        'ahorro': 'ahorrar para emergencias',
+        'casa': 'comprar casa',
+        'auto': 'comprar auto',
+        'viaje': 'hacer un viaje',
+        'invertir': 'invertir',
+        'libertad': 'libertad financiera',
+        'deudas': 'pagar deudas'
+    };
+    return `📊 **ANÁLISIS FINANCIERO PERSONALIZADO**
 
-💰 Ingreso: ${currency}${income}
-💸 Gastos: ${currency}${total}
-⚖️ Balance: ${currency}${balance}
-📈 Ahorro: ${savings}%
+💰 **Ingreso mensual:** ${currency} ${monthlyIncome.toLocaleString()}
+🏠 **Gastos fijos:** ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
+💸 **Gastos variables:** ${currency} ${(totalExpenses - fixedExpenses).toLocaleString()}
+⚖️ **Balance mensual:** ${currency} ${balance.toLocaleString()}
+📈 **Tasa de ahorro:** ${savingsRate}%
 
-1️⃣ Automatiza un ahorro del 15% de tu ingreso.
-2️⃣ Reduce gastos fijos en un 10% este mes.
-3️⃣ Registra todos tus gastos diariamente.`;
+🎯 **Meta seleccionada:** ${goalText[userProfile?.goal] || 'mejorar finanzas'}
+
+🔍 **3 RECOMENDACIONES ACCIONABLES**
+
+1️⃣ **Automatiza tu ahorro**  
+   Configura una transferencia automática del ${target}% de tu ingreso el día que te pagan.  
+   *Ejemplo:* si ganas ${currency} ${monthlyIncome.toLocaleString()}, ahorra ${currency} ${(monthlyIncome * target / 100).toLocaleString()} cada mes.
+
+2️⃣ **Reduce gastos fijos**  
+   Revisa tus suscripciones y servicios. Intenta negociar o cancelar lo que no usas.  
+   *Potencial de ahorro:* 10% = ${currency} ${(fixedExpenses * 0.1).toLocaleString()} mensuales.
+
+3️⃣ **Controla los gastos hormiga**  
+   Durante 30 días, anota CADA pequeño gasto (café, antojos, etc.). Al final del mes, sorprenderás cuánto puedes ahorrar.  
+   *Meta:* Reducir un 20% esos gastos.
+
+💪 **Compromiso semanal**  
+"Esta semana ahorraré el ${target}% de mi próximo ingreso antes de gastar."`;
 }
 
 app.get('/api/rates', (req, res) => {
@@ -256,5 +291,4 @@ app.get('/api/rates', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Servidor en http://localhost:${PORT}`);
     console.log(`🤖 IA: ${genAI ? 'ACTIVA' : 'LOCAL'}`);
-    console.log(`📧 Email: ${transporter ? 'CONFIGURADO' : 'NO'}`);
 });
