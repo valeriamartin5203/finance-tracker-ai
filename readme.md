@@ -361,7 +361,7 @@ Proyecto bajo licencia **MIT**. Ver detalles en `LICENSE`.
 
 ## 👨‍💻 Autor
 
-Desarrollado con ❤️ para gestionar tus finanzas de forma inteligente y automatizada.
+Valeria Martin Llamas
 
 **Última actualización:** Mayo 2025
 
