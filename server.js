@@ -217,7 +217,7 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
     }
 });
 
-// ============ FUNCIÓN LOCAL REALISTA (siempre funciona) ============
+// ============ FUNCIÓN LOCAL REALISTA ============
 function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance, savingsRate, userProfile, currency, debtInfo, userGoal) {
     let recomendaciones = [];
     const targetSavings = Math.min(25, parseInt(savingsRate) + 10);
@@ -277,7 +277,7 @@ function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTot
     return recomendaciones.join('\n\n') + '\n\n' + motivacion;
 }
 
-// ============ ANÁLISIS IA (con manejo robusto de errores) ============
+// ============ ANÁLISIS IA (con validaciones y fallback) ============
 app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
@@ -301,6 +301,17 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
         const totalExpenses = fixedExpenses + variableExpenses;
         const balance = monthlyIncome - totalExpenses;
         const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
+
+        // ========== VALIDACIONES DE COHERENCIA ==========
+        if (monthlyIncome <= 0) {
+            return res.json({ recommendations: '⚠️ No has registrado un ingreso mensual válido. Ve a "Mi perfil" y completa el campo "Ingreso mensual".' });
+        }
+        if (fixedExpenses > monthlyIncome * 1.2) {
+            return res.json({ recommendations: `⚠️ Tus gastos fijos ($${fixedExpenses.toLocaleString()}) superan con creces tus ingresos ($${monthlyIncome.toLocaleString()}). Por favor, revisa los valores en tu perfil financiero y ajústalos a números realistas.` });
+        }
+        if (savingsRate < -50) {
+            return res.json({ recommendations: '⚠️ Tus gastos son muy superiores a tus ingresos. Antes de analizar, considera reducir gastos o aumentar ingresos. También verifica que los datos de tu perfil sean correctos.' });
+        }
 
         let categoryBreakdown = '';
         for (const [cat, amount] of Object.entries(categoryTotals)) {
@@ -373,7 +384,6 @@ Al final, añade una frase motivacional de máximo 25 palabras que refuerce la c
             return res.json({ recommendations: aiResponse });
         } catch (geminiError) {
             console.error('Error llamando a Gemini:', geminiError.message);
-            // Fallback a modo local
             const localResponse = generarRespuestaLocalRealista(
                 monthlyIncome, fixedExpenses, categoryTotals, totalExpenses, balance,
                 savingsRate, userProfile, currency, debtInfo, userGoal

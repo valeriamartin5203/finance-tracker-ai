@@ -132,49 +132,16 @@ function calculateMonthlyIncome() {
     if (userProfile.incomeFrequency === 'quincenal') return monthly * 2;
     return monthly;
 }
-
 function calculateFixedExpenses() {
     if (!userProfile) return 0;
     return (userProfile.rent||0)+(userProfile.services||0)+(userProfile.groceries||0)+(userProfile.transport||0);
 }
-
 function calculateTotals() {
     const income = calculateMonthlyIncome();
     const variableExpenses = transactions.filter(t=>t.type==='gasto').reduce((sum,t)=>sum + (t.amount||0),0);
     const totalExpenses = calculateFixedExpenses() + variableExpenses;
     const balance = income - totalExpenses;
     return { income, totalExpenses, balance };
-}
-
-// ============ ANÁLISIS IA (con llamada mejorada) ============
-async function getAIAnalysis() {
-    // Asegurar datos frescos
-    await loadProfile();
-    await loadTransactions();
-    
-    const { income, totalExpenses, balance } = calculateTotals();
-    const container = document.getElementById('aiRecommendations');
-    container.innerHTML = '<div class="loading-spinner">🧠 Analizando con IA experta...</div>';
-    
-    try {
-        const res = await fetch('/api/ai/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                transactions: transactions,   // enviamos todas, el servidor filtra gastos
-                userProfile: userProfile,
-                currency: getCurrencySymbol()
-            })
-        });
-        const data = await res.json();
-        return data.recommendations;
-    } catch (error) {
-        console.error('Error en análisis IA:', error);
-        return '⚠️ Error al conectar. Intenta de nuevo.';
-    }
 }
 
 // ============ GRÁFICAS ============
@@ -247,23 +214,34 @@ function renderTransactions() {
     `).join('');
 }
 
-// ============ IA Y REPORTES ============
+// ============ IA Y REPORTES (ÚNICA DEFINICIÓN) ============
 async function getAIAnalysis() {
+    await loadProfile();
+    await loadTransactions();
     const { income, totalExpenses, balance } = calculateTotals();
     const savings = income>0?((balance/income)*100).toFixed(1):0;
-    try{
-        const res = await fetch('/api/ai/analyze',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-            body:JSON.stringify({ transactions:transactions.filter(t=>t.type==='gasto'), userProfile, currency:getCurrencySymbol(), totalIncome:income, totalExpenses, balance, savingsRate:savings })
+    const container = document.getElementById('aiRecommendations');
+    container.innerHTML = '<div class="loading-spinner">🧠 Analizando con IA experta...</div>';
+    try {
+        const res = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                transactions: transactions,   // enviamos todas las transacciones
+                userProfile: userProfile,
+                currency: getCurrencySymbol(),
+                totalIncome: income,
+                totalExpenses: totalExpenses,
+                balance: balance,
+                savingsRate: savings
+            })
         });
         const data = await res.json();
         return data.recommendations;
-    }catch(e){ return generarRespuestaLocal(income,totalExpenses,balance,savings); }
-}
-function generarRespuestaLocal(income,total,balance,savings){
-    const target = Math.min(20, parseInt(savings)+10);
-    return `📊 **Análisis Financiero**\n\n💰 Ingreso: ${formatCurrency(income)}\n💸 Gastos: ${formatCurrency(total)}\n⚖️ Balance: ${formatCurrency(balance)}\n📈 Ahorro: ${savings}%\n\n1️⃣ Automatiza el ${target}% de tu ingreso.\n2️⃣ Reduce gastos fijos 10%.\n3️⃣ Registra todos los gastos.`;
+    } catch (error) {
+        console.error('Error en análisis IA:', error);
+        return '⚠️ Error al conectar. Intenta de nuevo.';
+    }
 }
 async function sendEmailReport() {
     const email = userProfile?.email || currentUser?.email;
@@ -307,7 +285,6 @@ async function loadScheduledPayments() {
         scheduledPayments = data.payments || [];
         checkUpcomingPayments();
         updatePendingBadge();
-        // Si la página del calendario está visible, renderizar
         const calendarPage = document.getElementById('calendarPage');
         if(calendarPage && calendarPage.style.display !== 'none'){
             renderCalendar();
@@ -387,7 +364,6 @@ function renderCalendar() {
         console.warn('No se encontró calendarGrid');
         return;
     }
-    // Limpiar contenedor
     container.innerHTML = '';
     const firstDay = new Date(currentYear, currentMonth, 1);
     const startDay = firstDay.getDay();
@@ -396,7 +372,6 @@ function renderCalendar() {
     const monthYearElem = document.getElementById('currentMonthYear');
     if(monthYearElem) monthYearElem.textContent = `${monthNames[currentMonth]} ${currentYear}`;
     
-    // Días de la semana
     const weekdays = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     weekdays.forEach(day => {
         const weekdayDiv = document.createElement('div');
@@ -405,7 +380,6 @@ function renderCalendar() {
         container.appendChild(weekdayDiv);
     });
     
-    // Celdas vacías antes del día 1
     for(let i=0;i<startDay;i++){
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'calendar-day';
@@ -488,17 +462,13 @@ function initNavigation(){
         item.addEventListener('click',(e)=>{
             e.preventDefault();
             const page = item.dataset.page;
-            // Cambiar clase activa
             navItems.forEach(nav=>nav.classList.remove('active'));
             item.classList.add('active');
-            // Ocultar todas las páginas
             if(dashboardPage) dashboardPage.classList.remove('active');
             if(calendarPage) calendarPage.classList.remove('active');
-            // Mostrar la página seleccionada
             if(page === 'dashboard' && dashboardPage) dashboardPage.classList.add('active');
             if(page === 'calendar' && calendarPage){
                 calendarPage.classList.add('active');
-                // Renderizar calendario cuando se muestra por primera vez
                 renderCalendar();
                 renderPaymentsList();
             }
@@ -644,7 +614,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('themeToggle').addEventListener('click',()=> document.body.classList.toggle('dark'));
     document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
 
-    // Estilos para los radio cards
     document.querySelectorAll('.radio-card').forEach(card=>{
         card.addEventListener('click',function(){
             const radio = this.querySelector('input');
@@ -657,10 +626,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         radio.addEventListener('change',(e)=> document.getElementById('debtFields').style.display = e.target.value==='si'?'block':'none');
     });
 
-    // Inicializar navegación
     initNavigation();
 
-    // Botón flotante para agregar pagos (aparece solo cuando se ve la app)
     const addFloatBtn = ()=>{
         if(document.getElementById('appContainer').style.display==='block' && token){
             if(!document.querySelector('.add-payment-btn')){
@@ -686,7 +653,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     addFloatBtn();
     new MutationObserver(addFloatBtn).observe(document.getElementById('appContainer'),{attributes:true,attributeFilter:['style']});
 
-    // Formulario de pago programado
     document.getElementById('scheduledPaymentForm').addEventListener('submit', async (e)=>{
         e.preventDefault();
         const payment = {
@@ -703,14 +669,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderPaymentsList();
     });
 
-    // Cerrar modales al hacer clic fuera
     ['authModal','profileModal','calendarModal'].forEach(id=>{
         const modal = document.getElementById(id);
         if(modal) modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.style.display='none'; });
     });
 });
 
-// Exponer funciones globales para los botones inline
 window.deleteTransaction = deleteTransaction;
 window.deleteScheduledPayment = deleteScheduledPayment;
 window.togglePaymentStatus = togglePaymentStatus;
