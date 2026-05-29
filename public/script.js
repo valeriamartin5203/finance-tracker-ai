@@ -266,7 +266,8 @@ function generarRespuestaLocal(income,total,balance,savings){
     return `📊 **Análisis Financiero**\n\n💰 Ingreso: ${formatCurrency(income)}\n💸 Gastos: ${formatCurrency(total)}\n⚖️ Balance: ${formatCurrency(balance)}\n📈 Ahorro: ${savings}%\n\n1️⃣ Automatiza el ${target}% de tu ingreso.\n2️⃣ Reduce gastos fijos 10%.\n3️⃣ Registra todos los gastos.`;
 }
 async function sendEmailReport() {
-    if(!userProfile?.email){ alert('📧 Primero registra tu correo en "Mi perfil"'); return; }
+    const email = userProfile?.email || currentUser?.email;
+    if(!email){ alert('📧 Primero registra tu correo en "Mi perfil" o inicia sesión con un email válido'); return; }
     const btn = document.getElementById('emailReportBtn');
     const original = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -278,7 +279,7 @@ async function sendEmailReport() {
             body:JSON.stringify({ transactions, userProfile, currency:getCurrencySymbol() })
         });
         const data = await res.json();
-        if(data.success) alert('✅ Reporte enviado a '+userProfile.email);
+        if(data.success) alert('✅ Reporte enviado a '+email);
         else alert('❌ Error: '+data.error);
     }catch(e){ alert('Error de conexión'); }
     btn.innerHTML = original;

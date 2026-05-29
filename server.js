@@ -178,28 +178,29 @@ app.delete('/api/scheduled-payments/:id', authenticateToken, (req, res) => {
 // ============ REPORTE EMAIL ============
 app.post('/api/send-report', authenticateToken, async (req, res) => {
     try {
-        const { transactions, userProfile, currency } = req.body;
-        const email = userProfile?.email;
+        const { transactions = [], userProfile = {}, currency } = req.body;
+        const email = userProfile.email || req.user.email;
         if (!email) return res.status(400).json({ error: 'Correo no registrado' });
         if (!transporter) return res.status(400).json({ error: 'Email no configurado' });
         const ingresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0);
         const gastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + t.amount, 0);
         const balance = ingresos - gastos;
-        const html = `<div style="font-family: Arial; max-width:600px; margin:auto">
-            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white">
+        const formatAmount = value => `${currency} ${value.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`;
+        const html = `<div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; color:#333">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white; border-top-left-radius:12px; border-top-right-radius:12px;">
                 <h1>💰 FinanceTracker AI</h1>
                 <p>Tu Reporte Financiero</p>
             </div>
-            <div style="padding:20px">
-                <h2>📊 Resumen</h2>
-                <p><strong>Ingresos:</strong> ${currency} ${ingresos}</p>
-                <p><strong>Gastos:</strong> ${currency} ${gastos}</p>
-                <p><strong>Balance:</strong> ${currency} ${balance}</p>
-                <hr>
+            <div style="padding:20px; background:#ffffff;">
+                <h2 style="margin-bottom:16px;">📊 Resumen mensual</h2>
+                <p><strong>Ingresos:</strong> ${formatAmount(ingresos)}</p>
+                <p><strong>Gastos:</strong> ${formatAmount(gastos)}</p>
+                <p><strong>Balance:</strong> ${formatAmount(balance)}</p>
+                <hr style="margin:20px 0; border:none; border-top:1px solid #e0e0e0;">
                 <p><strong>Meta:</strong> ${userProfile.goal || 'Mejorar finanzas'}</p>
-                <p><strong>Ahorros:</strong> ${currency} ${userProfile.savings || 0}</p>
+                <p><strong>Ahorros actuales:</strong> ${formatAmount(userProfile.savings || 0)}</p>
             </div>
-            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px">
+            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px; border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
                 <p>© FinanceTracker AI</p>
             </div>
         </div>`;
@@ -209,8 +210,11 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
             subject: '📊 Tu Reporte FinanceTracker AI',
             html
         });
-        res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+        res.json({ success: true, email });
+    } catch (error) {
+        console.error('Error enviando reporte:', error);
+        res.status(500).json({ error: error.message || 'No se pudo enviar el correo' });
+    }
 });
 
 // ============ FUNCIÓN LOCAL REALISTA (siempre funciona) ============
