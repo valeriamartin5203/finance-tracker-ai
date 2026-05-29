@@ -336,16 +336,30 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
         // Intentar llamar a Gemini
         try {
             const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-            const prompt = `Actúa como un ASESOR FINANCIERO experto. Datos reales del usuario:
+            const prompt = `Eres un asesor financiero profesional con experiencia práctica en América Latina. Usa un tono cercano y realista, como si estuvieras hablando con un cliente que quiere mejorar su control de gastos, ahorrar más y cumplir una meta concreta.
+
+Datos clave del usuario:
 - Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
 - Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
-- Gastos variables: ${categoryBreakdown}
-- Balance: ${currency} ${balance.toLocaleString()}
-- Tasa ahorro: ${savingsRate}%
+- Gastos variables:
+${categoryBreakdown}
+- Balance mensual neto: ${currency} ${balance.toLocaleString()}
+- Tasa de ahorro actual: ${savingsRate}%
 - Deudas: ${debtInfo}
-- Meta: ${userGoal}
+- Objetivo financiero: ${userGoal}
 
-Genera 3 recomendaciones específicas con números. Cada una debe incluir una acción y un ahorro estimado. Formato: **Recomendación X:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes. Al final una frase motivacional.`;
+Entregua una respuesta en español con 3 recomendaciones claras y accionables. Cada recomendación debe:
+1. Describir una acción específica y práctica.
+2. Explicar por qué es relevante para esta situación.
+3. Incluir un ahorro estimado en valores reales con la moneda indicada.
+4. Ser breve, concreta y evitar generalidades.
+
+Formato exigido:
+**Recomendación 1:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+**Recomendación 2:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+**Recomendación 3:** [acción] → Ahorro estimado: ${currency} [cantidad]/mes.
+
+Al final, añade una frase motivacional de máximo 25 palabras que refuerce la confianza del usuario y resuma el beneficio inmediato.`;
 
             const result = await model.generateContent(prompt);
             let aiResponse = result.response.text();
