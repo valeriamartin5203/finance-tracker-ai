@@ -243,6 +243,7 @@ async function getAIAnalysis() {
         return '⚠️ Error al conectar. Intenta de nuevo.';
     }
 }
+
 async function sendEmailReport() {
     const email = userProfile?.email || currentUser?.email;
     if(!email){ alert('📧 Primero registra tu correo en "Mi perfil" o inicia sesión con un email válido'); return; }
@@ -360,10 +361,7 @@ function updatePendingBadge() {
 }
 function renderCalendar() {
     const container = document.getElementById('calendarGrid');
-    if(!container){
-        console.warn('No se encontró calendarGrid');
-        return;
-    }
+    if(!container) return;
     container.innerHTML = '';
     const firstDay = new Date(currentYear, currentMonth, 1);
     const startDay = firstDay.getDay();
@@ -453,7 +451,7 @@ function prevMonth(){ currentMonth--; if(currentMonth<0){ currentMonth=11; curre
 function nextMonth(){ currentMonth++; if(currentMonth>11){ currentMonth=0; currentYear++; } renderCalendar(); }
 function goToToday(){ currentDate=new Date(); currentYear=currentDate.getFullYear(); currentMonth=currentDate.getMonth(); renderCalendar(); }
 
-// ============ NAVEGACIÓN ENTRE PÁGINAS ============
+// ============ NAVEGACIÓN ============
 function initNavigation(){
     const dashboardPage = document.getElementById('dashboardPage');
     const calendarPage = document.getElementById('calendarPage');

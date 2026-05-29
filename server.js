@@ -35,15 +35,24 @@ const writeJSON = (file, data) => {
     catch (error) { return false; }
 };
 
-// ============ EMAIL ============
+// ============ EMAIL CONFIG (con timeout ampliado y puerto 465) ============
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-        timeout: 5000
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        },
+        timeout: 30000,
+        connectionTimeout: 30000,
+        socketTimeout: 30000
     });
-    console.log('✅ Email configurado');
+    console.log('✅ Email configurado (SMTP con timeout ampliado)');
+} else {
+    console.log('⚠️ Email no configurado - faltan variables');
 }
 
 // ============ GEMINI IA ============
@@ -175,19 +184,21 @@ app.delete('/api/scheduled-payments/:id', authenticateToken, (req, res) => {
     } else res.status(404).json({ error: 'No encontrado' });
 });
 
-// ============ REPORTE EMAIL ============
+// ============ ENVÍO DE REPORTE POR EMAIL (sin bloqueo) ============
 app.post('/api/send-report', authenticateToken, async (req, res) => {
     try {
         const { transactions = [], userProfile = {}, currency } = req.body;
         const email = userProfile.email || req.user.email;
         if (!email) return res.status(400).json({ error: 'Correo no registrado' });
         if (!transporter) return res.status(400).json({ error: 'Email no configurado' });
+
         const ingresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + t.amount, 0);
         const gastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + t.amount, 0);
         const balance = ingresos - gastos;
         const formatAmount = value => `${currency} ${value.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`;
+
         const html = `<div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; color:#333">
-            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white; border-top-left-radius:12px; border-top-right-radius:12px;">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2); padding:30px; text-align:center; color:white; border-radius:12px 12px 0 0;">
                 <h1>💰 FinanceTracker AI</h1>
                 <p>Tu Reporte Financiero</p>
             </div>
@@ -196,23 +207,32 @@ app.post('/api/send-report', authenticateToken, async (req, res) => {
                 <p><strong>Ingresos:</strong> ${formatAmount(ingresos)}</p>
                 <p><strong>Gastos:</strong> ${formatAmount(gastos)}</p>
                 <p><strong>Balance:</strong> ${formatAmount(balance)}</p>
-                <hr style="margin:20px 0; border:none; border-top:1px solid #e0e0e0;">
+                <hr style="margin:20px 0;">
                 <p><strong>Meta:</strong> ${userProfile.goal || 'Mejorar finanzas'}</p>
                 <p><strong>Ahorros actuales:</strong> ${formatAmount(userProfile.savings || 0)}</p>
             </div>
-            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px; border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
+            <div style="background:#f0f0f0; padding:15px; text-align:center; font-size:12px; border-radius:0 0 12px 12px;">
                 <p>© FinanceTracker AI</p>
             </div>
         </div>`;
-        await transporter.sendMail({
+
+        // Envío en segundo plano (no esperamos la respuesta)
+        transporter.sendMail({
             from: `"FinanceTracker AI" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: '📊 Tu Reporte FinanceTracker AI',
             html
+        }).then(() => {
+            console.log(`✅ Reporte enviado a ${email}`);
+        }).catch(err => {
+            console.error(`❌ Error enviando reporte a ${email}:`, err.message);
         });
-        res.json({ success: true, email });
+
+        // Respondemos inmediatamente al usuario
+        res.json({ success: true, email, message: 'El reporte está siendo enviado, puede tardar unos segundos.' });
+
     } catch (error) {
-        console.error('Error enviando reporte:', error);
+        console.error('Error en /api/send-report:', error);
         res.status(500).json({ error: error.message || 'No se pudo enviar el correo' });
     }
 });
@@ -277,7 +297,7 @@ function generarRespuestaLocalRealista(monthlyIncome, fixedExpenses, categoryTot
     return recomendaciones.join('\n\n') + '\n\n' + motivacion;
 }
 
-// ============ ANÁLISIS IA (con validaciones y fallback) ============
+// ============ ANÁLISIS IA CON VALIDACIONES Y CONVERSIÓN DE FRECUENCIA ============
 app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
     try {
         const { transactions, userProfile, currency } = req.body;
@@ -286,7 +306,20 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
             return res.json({ recommendations: '⚠️ Completa tu perfil financiero (ingresos, gastos fijos) antes de analizar.' });
         }
 
-        const monthlyIncome = userProfile.monthlyIncome;
+        // Convertir ingreso a mensual según frecuencia
+        let monthlyIncome = userProfile.monthlyIncome;
+        let frecuenciaTexto = '';
+        if (userProfile.incomeFrequency === 'semanal') {
+            monthlyIncome = userProfile.monthlyIncome * 4.33;
+            frecuenciaTexto = `semanal (${currency} ${userProfile.monthlyIncome.toLocaleString()} por semana → mensual: ${currency} ${monthlyIncome.toLocaleString()})`;
+        } else if (userProfile.incomeFrequency === 'quincenal') {
+            monthlyIncome = userProfile.monthlyIncome * 2;
+            frecuenciaTexto = `quincenal (${currency} ${userProfile.monthlyIncome.toLocaleString()} por quincena → mensual: ${currency} ${monthlyIncome.toLocaleString()})`;
+        } else {
+            monthlyIncome = userProfile.monthlyIncome;
+            frecuenciaTexto = `mensual (${currency} ${monthlyIncome.toLocaleString()})`;
+        }
+
         const rent = userProfile.rent || 0;
         const services = userProfile.services || 0;
         const groceries = userProfile.groceries || 0;
@@ -302,12 +335,12 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
         const balance = monthlyIncome - totalExpenses;
         const savingsRate = monthlyIncome > 0 ? ((balance / monthlyIncome) * 100).toFixed(1) : 0;
 
-        // ========== VALIDACIONES DE COHERENCIA ==========
+        // Validaciones de coherencia
         if (monthlyIncome <= 0) {
-            return res.json({ recommendations: '⚠️ No has registrado un ingreso mensual válido. Ve a "Mi perfil" y completa el campo "Ingreso mensual".' });
+            return res.json({ recommendations: `⚠️ No has registrado un ingreso mensual válido. Tu ingreso actual es ${frecuenciaTexto}. Ve a "Mi perfil" y completa el campo "Ingreso mensual" con un valor mayor a cero.` });
         }
         if (fixedExpenses > monthlyIncome * 1.2) {
-            return res.json({ recommendations: `⚠️ Tus gastos fijos ($${fixedExpenses.toLocaleString()}) superan con creces tus ingresos ($${monthlyIncome.toLocaleString()}). Por favor, revisa los valores en tu perfil financiero y ajústalos a números realistas.` });
+            return res.json({ recommendations: `⚠️ Tus gastos fijos (${currency} ${fixedExpenses.toLocaleString()}) superan con creces tus ingresos mensuales (${frecuenciaTexto}). Por favor, revisa los valores en tu perfil financiero. Asegúrate de que la frecuencia del ingreso sea correcta (si ganas ${currency} ${userProfile.monthlyIncome.toLocaleString()} a la semana, tu ingreso mensual es ~${currency} ${(userProfile.monthlyIncome*4.33).toLocaleString()}).` });
         }
         if (savingsRate < -50) {
             return res.json({ recommendations: '⚠️ Tus gastos son muy superiores a tus ingresos. Antes de analizar, considera reducir gastos o aumentar ingresos. También verifica que los datos de tu perfil sean correctos.' });
@@ -354,7 +387,7 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
             const prompt = `Eres un asesor financiero profesional con experiencia práctica en América Latina. Usa un tono cercano y realista, como si estuvieras hablando con un cliente que quiere mejorar su control de gastos, ahorrar más y cumplir una meta concreta.
 
 Datos clave del usuario:
-- Ingreso mensual: ${currency} ${monthlyIncome.toLocaleString()}
+- Ingreso mensual (convertido según frecuencia ${userProfile.incomeFrequency}): ${currency} ${monthlyIncome.toLocaleString()}
 - Gastos fijos: ${currency} ${fixedExpenses.toLocaleString()} (${((fixedExpenses/monthlyIncome)*100).toFixed(1)}% del ingreso)
 - Gastos variables:
 ${categoryBreakdown}
